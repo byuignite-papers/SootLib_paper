@@ -1,0 +1,382 @@
+%% 
+%% Copyright 2007, 2008, 2009 Elsevier Ltd
+%% 
+%% This file is part of the 'Elsarticle Bundle'.
+%% ---------------------------------------------
+%% 
+%% It may be distributed under the conditions of the LaTeX Project Public
+%% License, either version 1.2 of this license or (at your option) any
+%% later version.  The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.2 or later is part of all distributions of LaTeX
+%% version 1999/12/01 or later.
+%% 
+%% The list of all files belonging to the 'Elsarticle Bundle' is
+%% given in the file `manifest.txt'.
+%% 
+
+%% Template article for Elsevier's document class `elsarticle'
+%% with numbered style bibliographic references
+%% SP 2008/03/01
+
+\documentclass[preprint,12pt,letterpaper]{elsarticle}
+
+%% Use the option review to obtain double line spacing
+%% \documentclass[authoryear,preprint,review,12pt]{elsarticle}
+
+%-------- packages --------
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{lineno}                 % line numbers
+\usepackage[version=4]{mhchem}      % chem formatting
+\usepackage{xcolor}
+
+%-------- front matter --------
+\journal{SoftwareX}
+
+\begin{document}
+
+\begin{frontmatter}
+
+%% Title, authors and addresses
+
+%% use the tnoteref command within \title for footnotes;
+%% use the tnotetext command for theassociated footnote;
+%% use the fnref command within \author or \address for footnotes;
+%% use the fntext command for theassociated footnote;
+%% use the corref command within \author for corresponding author footnotes;
+%% use the cortext command for theassociated footnote;
+%% use the ead command for the email address,
+%% and the form \ead[url] for the home page:
+%% \title{Title\tnoteref{label1}}
+%% \tnotetext[label1]{}
+%% \author{Name\corref{cor1}\fnref{label2}}
+%% \ead{email address}
+%% \ead[url]{home page}
+%% \fntext[label2]{}
+%% \cortext[cor1]{}
+%% \address{Address\fnref{label3}}
+%% \fntext[label3]{}
+
+\title{SootLib: a soot model library for combustion CFD}
+
+%% use optional labels to link authors explicitly to addresses:
+%% \author[label1,label2]{}
+%% \address[label1]{}
+%% \address[label2]{}
+
+%\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+\author{Victoria B. Stephens}
+\author{Josh Bedwell}
+\author{David O. Lignell\corref{cor1}}
+
+\cortext[cor1]{Corresponding author \ead{davidlignell@byu.edu}}
+
+\address{Chemical Engineering Department, Brigham Young University, Provo, UT 84602, USA}
+
+\begin{abstract}
+sootlib abstract goes here
+\end{abstract}
+
+\begin{keyword}
+soot \sep combustion \sep reacting flow simulation
+\end{keyword}
+
+\end{frontmatter}
+
+\linenumbers
+
+%-------- main text --------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+\label{s:intro}
+
+Most commercial combustion processes that produce energy involve turbulent, non-premixed flames, which produce soot. Soot is responsible for a flame's luminosity, generates a large portion of a flame's radiative heat transfer to its surroundings, and contributes to many of the health, safety, and environmental hazards associated with air pollution from combustion systems~\cite{EPA_2009,EPA_2004}. In order to address soot's negative effects and optimize practical combustion processes, scientists and engineers require a better understanding of soot's fundamental structure and behavior in combustion environments.
+
+Because combustion processes are so complex, modeling and simulation cannot be fully separated from studying fundamental chemical processes; instead, we must use incomplete knowledge and imperfect models to investigate both simultaneously. We often rely on experimental data for comparison, and as a result, errors must be distinguished by their source\textemdash experimental, theoretical, or computational\textemdash which further complicates modeling. Turbulent combustion uniquely challenges modelers because it involves tightly coupled equations of multicomponent mass transfer, convective and radiative heat transfer, turbulent fluid dynamics, multi-phase flow, and complex chemical kinetics. These span many orders of magnitude in both their length and time scales. Direct simulation approaches can produce accurate simulation data by resolving the full range of length and time scales, but the computational cost can be prohibitively high, particularly for simulating practical combustion processes of interest to engineers~\cite{Pope_2000,Bernard_2002}. Simulating soot in flames further expands the range of scales that must be considered, adding additional complexity and computational cost to direct simulations.
+
+High computational cost in combustion simulations is often addressed by modeling various aspects of the configuration. In particular, computational models that quantify soot production in simulations can help us study its fundamental behavior and distinguish between various reaction mechanisms and transport models. Reactions involving soot are not purely chemical, but also involve particle aggregation, size distributions, and transport that may or may not affect molecular reactions and heat transfer within a flame. Accurate models and simulations that help us clarify the fundamental processes that control soot formation and transport in flames represent an important step forward in the study of combustion systems~\cite{Frenklach_2002b}.
+
+With SootLib, we provide a convenient, easy-to-use access point for soot property and particle dynamics models that can be interfaced with various simulation approaches for combustion CFD. SootLib is a modular C++ library that can compute various source terms for the reacting Navier Stokes equations. Its modular design makes model parts interchangeable (within limits), allowing users to quickly and easily compare and contrast models. Several [TODO: put a number here] models are fully implemented and validated and use a common interface, allowing researchers convenient access to soot modeling tools suitable for various reacting CFD applications.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Model Descriptions}
+\label{s:models}
+
+Soot models can generally be broken down into two interrelated parts: chemistry and particle size distribution (PSD). Soot chemistry models address the chemical reactions involved in soot behavior, while PSD models describe the size distribution of soot particles. Given a specific state and a set of soot chemistry mechanisms, the PSD model predicts the amounts and relative locations of different sized soot particles based on their current distribution, the desired chemical mechanisms, and the thermodynamic state of the surrounding gas. Using a particular set of soot chemistry models does not necessitate using a particular PSD model, and vice versa. SootLib takes advantage of this distinction by allowing users to specify individual models rather than predetermined model sets, giving users more flexibility and model developers more control in soot simulations.
+
+%--------------------------------------------------------------------------
+\subsection{Chemistry}
+\label{ss:chemistry}
+
+Soot chemistry is typically divided into four main types: nucleation reactions describe how soot particles form from gaseous precursors and may or may not include the condensation of large polycyclic aromatic hydrocarbons (PAH); surface growth refers to particle growth by the chemical addition of gaseous species to existing soot particles; oxidation reactions describe soot particle size reduction by chemical reactions, usually with oxygen-based gaseous species; and coagulation defines the rate at which soot particles combine to form new particles (and may or may not include the aggregation of particles into large fractal soot structures). Note that while many coagulation processes are not technically chemical reactions, coagulation models are typically structured so as to be analagous to the strictly chemical steps and are usually categorized as a type of soot chemistry.
+
+A complete soot chemistry model typically provides a mechanism for each of the four major steps, each of which occurs independently but all of which depend heavily on the composition and thermodynamic properties of the surrounding gas. Some models provide all four mechanisms, while later research tends to expand on earlier mechanisms or focus on one type. SootLib collects a range of models from the literature and implements them with a uniform interface, offering model developers a flexible testing method and giving research simulations a consistent framework for parametric simulations. Table~\ref{t:chem_models} summarizes the soot chemistry models implemented in SootLib.
+
+\begin{table}
+    \caption{Summary of soot chemistry models implemented in SootLib.}
+    \label{t:chem_models}
+    \centering
+    \resizebox{\textwidth}{!}{
+        \begin{tabular}{l l l l}
+            \hline
+            Chemistry type  & Model                 & Model ID     & Gas species \\
+            \hline
+            Nucleation      & Leung \& Lindstedt~\cite{Leung_1991}    & LL      & \ce{C2H2}, \ce{H2} \\
+                            & Lindstedt 2005~\cite{Lindstedt_2005}    & LIN     & \ce{C2H2}, \ce{H2} \\
+                            & PAH nucleation~\cite{Blanquart_2009}    & PAH     & gaseous PAH  \\
+            Surface growth  & Leung \& Lindstedt~\cite{Leung_1991}    & LL      & \ce{C2H2}, \ce{H2} \\
+                            & Lindstedt 1994~\cite{Lindstedt_1994}    & LIN     & \ce{C2H2}, \ce{H2} \\
+                            & HACA~\cite{Appel_2000,Frenklach_1994}   & HACA    & \ce{C2H2}, \ce{H} \\
+            Oxidation       & Leung \& Lindstedt~\cite{Leung_1991}    & LL      & \ce{O2}, \ce{CO} \\
+                            & HACA~\cite{Appel_2000,Frenklach_1994}   & HACA    & \ce{H}, \ce{H2}, \ce{OH}, \ce{H2O}, \ce{OH}, \ce{O2}, \ce{H2O} \\
+                            & Lee~\cite{Lee_1962} + Neoh~\cite{Neoh_1980,Neoh_1981}   & LEE\_NEOH     & stuff \\
+                            & NSC~\cite{NSC_1961} + Neoh~\cite{Neoh_1980,Neoh_1981}   & NSC\_NEOH     & stuff \\
+            Coagulation     & Leung \& Lindstedt~\cite{Leung_1991}    & LL       & N/A  \\
+                            & Fuchs~\cite{Fuchs_1963,Seinfeld_2016}                 & FUCHS    & N/A  \\
+                            & Frenklach [year]~\cite{Frenklach_2002}  & FRENK    & N/A  \\
+            \hline
+        \end{tabular}
+    }
+\end{table}
+
+\subsubsection{Leung and Lindstedt 4-step kinetic mechanism}
+\label{sss:LL}
+
+SootLib's simplest chemistry is a simplified kinetic mechanism presented by Leung and Lindstedt~\cite{Leung_1991} that consists of four steps: one each for soot nucleation, surface growth, oxidation, and coagulation.
+
+\subsubsection{Lindstedt revised nucleation and surface growth}
+\label{sss:LIN}
+
+\subsubsection{PAH nucleation and condensation}
+\label{sss:PAH}
+
+\subsubsection{HACA growth and oxidation}
+\label{sss:HACA}
+
+\subsubsection{Oxidation by Neoh et al.}
+\label{sss:X_NEOH}
+
+\subsubsection{Coagulation mechanisms}
+\label{sss:FUCHS_FRENK}
+
+%\subsubsection{Nucleation}
+%\label{sss:nucleation}
+%
+%% Nucleation = formation of the smallest possible soot particles
+%% Note that we define what the smallest possible particle is
+%
+%\subsubsubsection{Leung and Lindstedt (LL)}
+%
+%\subsubsection{Surface growth}
+%\label{sss:growth}
+%
+%\subsubsection{Oxidation}
+%\label{sss:oxidation}
+%
+%\subsubsection{Coagulation}
+%\label{sss:coagulation}
+
+%--------------------------------------------------------------------------
+\subsection{Particle size distribution and dynamics}
+\label{ss:PSD_dynamics}
+
+%In addition to the chemical reactions that influence their creation and destruction, soot particles
+
+% General info about number density functions and using moments to describe a PSD.
+% Maybe include derivation of moment-based NDF source terms
+
+\begin{table}
+    \caption{Summary of soot particle size distribution models implemented in SootLib.}
+    \label{t:psd_models}
+    \centering
+    \resizebox{\textwidth}{!}{
+        \begin{tabular}{l l l}
+            \hline
+            PSD model                                    & Model ID & \# Moments   \\
+            \hline
+            Assumed monodisperse [CITATION]                        & MONO  & 2      \\
+            Assumed lognormal [CITATION]                           & LOGN  & 3  \\
+            Quadrature method of moments~\cite{McGraw_1997} & QMOM  & 2, 4, 6  \\
+            Method of moments with interpolative closure~\cite{Frenklach_2002b} & MOMIC & 2\textendash8  \\
+            \hline
+        \end{tabular}
+    }
+\end{table}
+
+\subsubsection{Monodisperse distribution (MONO)}
+\label{sss:mono}
+
+\subsubsection{Lognormal distribution (LOGN)}
+\label{sss:logn}
+
+\subsubsection{Quadrature method of moments (QMOM)}
+\label{sss:qmom}
+
+\subsubsection{Method of moments with interpolative closure (MOMIC)}
+\label{sss:momic}
+
+%\subsubsection{Sectional model (SECT)}
+%\label{sss:sect}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Software description}
+\label{s:architecture}
+
+%Describe the software in as much as is necessary to establish a vocabulary needed to explain its impact.
+%
+%Give a short overview of the overall software architecture; provide a pictorial component overview or similar (if possible). If necessary provide implementation details.
+%
+%Present the major functionalities of the software.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Validation and Examples}
+\label{s:examples}
+
+%Provide at least one illustrative example to demonstrate the major functions.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Discussion}
+\label{s:discussion}
+
+%\textbf{This is the main section of the article and the reviewers weight the description here appropriately}
+%
+%Indicate in what way new research questions can be pursued as a result of the software (if any).
+%
+%Indicate in what way, and to what extent, the pursuit of existing research questions is improved (if so).
+%
+%Indicate in what way the software has changed the daily practice of its users (if so).
+%
+%Indicate how widespread the use of the software is within and outside the intended user group.
+%
+%Indicate in what way the software is used in commercial settings and/or how it led to the creation of spin-off companies (if so).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Conclusions}
+\label{s:conclusions}
+
+Set out the conclusion of this original software publication.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Conflict of Interest}
+%Please select the appropriate text:
+
+%Potential conflict of interest exists:
+%We wish to draw the attention of the Editor to the following facts, which may be considered as potential conflicts of interest, and to significant financial contributions to this work. The nature of potential conflict of interest is described below: [Describe conflict of interest]
+
+%No conflict of interest exists:
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section*{Acknowledgements}
+
+%The authors extend special thanks to Hadi Bordbar for assistance with the WSGG model and to Vladimir Solovjov and Brent Webb for their insights and assistance with the RCSLW model.
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% References:
+%% If you have bibdatabase file and want bibtex to generate the
+%% bibitems, please use
+%%
+
+\bibliographystyle{elsarticle-num}
+\bibliography{sootlib-refs}
+
+%% else use the following coding to input the bibitems directly in the
+%% TeX file.
+
+%\begin{thebibliography}{00}
+%
+%%% \bibitem{label}
+%%% Text of bibliographic item
+%\bibitem{Lignell_2018}
+%D.~O. Lignell, V.~B. Lansinger, J.~Medina, M.~Klein, A.~R. Kerstein,
+%H.~Schmidt, M.~Fistler, M.~Oevermann, One-dimensional turbulence modeling for
+%cylindrical and spherical flows: model formulation and application,
+%Theoretical and Computational Fluid Dynamics 32~(4) (2018) 495--520.
+%\newblock \href {http://dx.doi.org/10.1007/s00162-018-0465-1}
+%{\path{doi:10.1007/s00162-018-0465-1}}.
+%
+%
+%\end{thebibliography}
+
+\section*{Illustrative Examples}
+Optional : you may include one explanatory  video that will appear next to your article, in the right hand side panel. (Please upload any video as a single supplementary file with your article. Only one MP4 formatted, with 50MB maximum size, video is possible per article. Recommended video dimensions are 640 x 480 at a maximum of 30 frames / second. Prior to submission please test and validate your .mp4 file at  \url{http://elsevier-apps.sciverse.com/GadgetVideoPodcastPlayerWeb/verification} . This tool will display your video exactly in the same way as it will appear on ScienceDirect. )
+
+
+\section*{Required Metadata}
+
+\section*{Current code version}
+
+Ancillary data table required for subversion of the codebase. Kindly replace examples in right column with the correct information about your current code, and leave the left column as it is.
+
+\begin{table}[!h]
+\begin{tabular}{|l|p{6.5cm}|p{6.5cm}|}
+\hline
+\textbf{Nr.} & \textbf{Code metadata description} & \textbf{Please fill in this column} \\
+\hline
+C1 & Current code version & For example v42 \\
+\hline
+C2 & Permanent link to code/repository used for this code version & For example: $https://github.com/mozart/mozart2$ \\
+\hline
+C3  & Permanent link to Reproducible Capsule & \\
+\hline
+C4 & Legal Code License   & List one of the approved licenses \\
+\hline
+C5 & Code versioning system used & For example svn, git, mercurial, etc. put none if none \\
+\hline
+C6 & Software code languages, tools, and services used & For example C++, python, r, MPI, OpenCL, etc. \\
+\hline
+C7 & Compilation requirements, operating environments \& dependencies & \\
+\hline
+C8 & If available Link to developer documentation/manual & For example: $http://mozart.github.io/documentation/$ \\
+\hline
+C9 & Support email for questions & \\
+\hline
+\end{tabular}
+\caption{Code metadata (mandatory)}
+\end{table}
+
+\section*{Current executable software version}
+
+Ancillary data table required for sub version of the executable software: (x.1, x.2 etc.) kindly replace examples in right column with the correct information about your executables, and leave the left column as it is.
+
+\begin{table}[!h]
+\begin{tabular}{|l|p{6.5cm}|p{6.5cm}|}
+\hline
+\textbf{Nr.} & \textbf{(Executable) software metadata description} & \textbf{Please fill in this column} \\
+\hline
+S1 & Current software version & For example 1.1, 2.4 etc. \\
+\hline
+S2 & Permanent link to executables of this version  & For example: $https://github.com/combogenomics/$ $DuctApe/releases/tag/DuctApe-0.16.4$ \\
+\hline
+S3  & Permanent link to Reproducible Capsule & \\
+\hline
+S4 & Legal Software License & List one of the approved licenses \\
+\hline
+S5 & Computing platforms/Operating Systems & For example Android, BSD, iOS, Linux, OS X, Microsoft Windows, Unix-like , IBM z/OS, distributed/web based etc. \\
+\hline
+S6 & Installation requirements \& dependencies & \\
+\hline
+S7 & If available, link to user manual - if formally published include a reference to the publication in the reference list & For example: $http://mozart.github.io/documentation/$ \\
+\hline
+S8 & Support email for questions & \\
+\hline
+\end{tabular}
+\caption{Software metadata (optional)}
+\end{table}
+
+\end{document}
+\endinput
+%%
+%% End of file `SoftwareX_article_template.tex'.
