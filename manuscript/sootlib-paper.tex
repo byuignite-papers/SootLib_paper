@@ -29,7 +29,10 @@
 \usepackage{hyperref}
 \usepackage{lineno}                 % line numbers
 \usepackage[version=4]{mhchem}      % chem formatting
-\usepackage{xcolor}
+\usepackage{siunitx}                % units formatting
+
+%-------- package setup --------
+\sisetup{exponent-mode = scientific}
 
 %-------- front matter --------
 \journal{SoftwareX}
@@ -117,68 +120,93 @@ Soot chemistry is typically divided into four main types: nucleation reactions d
 A complete soot chemistry model typically provides a mechanism for each of the four major steps, each of which occurs independently but all of which depend heavily on the composition and thermodynamic properties of the surrounding gas. Some models provide all four mechanisms, while later research tends to expand on earlier mechanisms or focus on one type. SootLib collects a range of models from the literature and implements them with a uniform interface, offering model developers a flexible testing method and giving research simulations a consistent framework for parametric simulations. Table~\ref{t:chem_models} summarizes the soot chemistry models implemented in SootLib.
 
 \begin{table}
-    \caption{Summary of soot chemistry models implemented in SootLib.}
+    \caption{Summary of soot chemistry models implemented in SootLib. In mechanisms, \ce{C(s)} represents a soot particle, i.e. "solid" carbon; \ce{C(s)^.} indicates a radical site on a soot particle, typically caused by hydrogen abstraction. $K_{12}$ is the generalized coagulation coefficient applied to two particles; variable definitions and details of SootLib's coagulation mechanisms can be found in Section~\ref{sss:coagulation}.}
     \label{t:chem_models}
     \centering
     \resizebox{\textwidth}{!}{
         \begin{tabular}{l l l l}
             \hline
-            Chemistry type  & Model                 & Model ID     & Gas species \\
+            Chemistry type  & Model                 & Model ID     & Mechanism \\
+            \hline \hline
+            Nucleation      & Leung \& Lindstedt~\cite{Leung_1991}       & LL        & \ce{C2H2 -> 2C(s) + H2} \\
+                            & Lindstedt 2005~\cite{Lindstedt_2005b}     & LIN       & \ce{C2H2 -> 2C(s) + H2} \\
+                            & PAH nucleation~\cite{Blanquart_2009}      & PAH       & dimerization of gaseous PAH  \\
             \hline
-            Nucleation      & Leung \& Lindstedt~\cite{Leung_1991}    & LL      & \ce{C2H2}, \ce{H2} \\
-                            & Lindstedt 2005~\cite{Lindstedt_2005}    & LIN     & \ce{C2H2}, \ce{H2} \\
-                            & PAH nucleation~\cite{Blanquart_2009}    & PAH     & gaseous PAH  \\
-            Surface growth  & Leung \& Lindstedt~\cite{Leung_1991}    & LL      & \ce{C2H2}, \ce{H2} \\
-                            & Lindstedt 1994~\cite{Lindstedt_1994}    & LIN     & \ce{C2H2}, \ce{H2} \\
-                            & HACA~\cite{Appel_2000,Frenklach_1994}   & HACA    & \ce{C2H2}, \ce{H} \\
-            Oxidation       & Leung \& Lindstedt~\cite{Leung_1991}    & LL      & \ce{O2}, \ce{CO} \\
-                            & HACA~\cite{Appel_2000,Frenklach_1994}   & HACA    & \ce{H}, \ce{H2}, \ce{OH}, \ce{H2O}, \ce{OH}, \ce{O2}, \ce{H2O} \\
-                            & Lee~\cite{Lee_1962} + Neoh~\cite{Neoh_1980,Neoh_1981}   & LEE\_NEOH     & stuff \\
-                            & NSC~\cite{Nagle_1962} + Neoh~\cite{Neoh_1980,Neoh_1981}   & NSC\_NEOH     & stuff \\
-            Coagulation     & Leung \& Lindstedt~\cite{Leung_1991}    & LL       & N/A  \\
-                            & Fuchs~\cite{Seinfeld_2016}                 & FUCHS    & N/A  \\
-                            & Frenklach [year]~\cite{Frenklach_2002}  & FRENK    & N/A  \\
+            Surface growth  & Leung \& Lindstedt~\cite{Leung_1991}       & LL        & \ce{C2H2 + nC(s) ->} (n+2)\ce{C(s) + H2} \\
+                            & Lindstedt 1994~\cite{Lindstedt_1994}      & LIN       & \ce{C2H2 + nC(s) ->} (n+2)\ce{C(s) + H2} \\
+                            &                                           &           & independent of surface area \\
+                            & HACA~\cite{Appel_2000,Frenklach_1994}     & HACA      & \ce{C(s)-H + H <=> C(s)^. + H2} \\
+                            &                                           &           & \ce{C(s)^. + H -> C(s)-H} \\
+                            &                                           &           & \ce{C(s)^. + C2H2 -> C(s)-H + H} \\
+                            &                                           &           & \ce{C(s)-H + OH <=> C(s)^. + H2O} \\
+            \hline
+            Oxidation       & Leung \& Lindstedt~\cite{Leung_1991}       & LL        &  \ce{C(s) + 1/2O2 -> CO} \\
+                            & HACA~\cite{Appel_2000,Frenklach_1994}     & HACA      & \ce{C(s)^. + O2 -> 2CO + products} \\
+                            &                                           &           & \ce{C(s)-H + OH -> CO + products} \\
+                            & Lee~\cite{Lee_1962} +
+                              Neoh~\cite{Neoh_1980,Neoh_1981}           & LEE\_NEOH  & \ce{C + 1/2O2 -> CO} \\
+                            &                                           &           & \ce{C + OH -> CO + H} \\
+                            & NSC~\cite{Nagle_1962} +
+                              Neoh~\cite{Neoh_1980,Neoh_1981}           & NSC\_NEOH  & \ce{C + 1/2O2 -> CO} \\
+                            &                                           &           & \ce{C + OH -> CO + H} \\
+            \hline
+            Coagulation     & Leung \& Lindstedt~\cite{Leung_1991}       & LL        & \ce{nC(s) -> C_n(s)}  \\
+                            & Fuchs~\cite{Fuchs_1964,Seinfeld_2016}     & FUCHS     & $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$  \\
+                            & Frenklach~\cite{Frenklach_2002}           & FRENK     & $K_{12}=\beta_{FM}\beta_{C}/(\beta_{FM}+\beta_{C})$  \\
             \hline
         \end{tabular}
     }
 \end{table}
 
-\subsubsection{Leung and Lindstedt 4-step kinetic mechanism}
-\label{sss:LL}
+\subsubsection{Nucleation}
+\label{sss:nucleation}
 
-SootLib's simplest chemistry is a simplified kinetic mechanism presented by Leung and Lindstedt~\cite{Leung_1991} that consists of four steps: one each for soot nucleation, surface growth, oxidation, and coagulation.
+Particle nucleation refers to the mechanisms by which the smallest possible soot particles are formed. The threshold that divides gas-phase molecules from the smallest soot particles is typically based on size. The most common definition used in soot modeling literature defines a soot particle as having at least 100 carbon atoms [TODO CITATION]; this is the value used by SootLib for kinetic-style nucleation mechanisms. The minimum soot particle size may also be defined by the nucleation mechanism itself, such as in SootLib's PAH nucleation mechansism, which defines the smallest soot particles as the result of a collsion between two PAH dimers.
 
-\subsubsection{Lindstedt revised nucleation and surface growth}
-\label{sss:LIN}
+SootLib's simplest chemistry is a simplified kinetic mechanism presented by Leung and Lindstedt (LL) that consists of four kinetic-style rate steps: one each for soot nucleation, surface growth, oxidation, and coagulation~\cite{Leung_1991}. The LL nucleation rate is given by
+\begin{equation}
+    R_{nuc} = \num{0.1e5} e^{-21100/T} \ce{[C2H2]},
+\end{equation}
+where $R_{nuc}$ is the rate of soot nucleation in \si{kmol/m^{3} s}, $T$ is the gas temperature in \si{K}, and \ce{[C2H2]} is the concentration of gaseous acetylene in \si{kmol / m^3}.
 
-\subsubsection{PAH nucleation and condensation}
-\label{sss:PAH}
+\subsubsection{Surface growth}
+\label{sss:growth}
 
-\subsubsection{HACA growth and oxidation}
-\label{sss:HACA}
+The LL surface growth rate is given by
+\begin{equation}
+    R_{grw} = \num{0.6e4} e^{-21100/T} f(S) \ce{[C2H2]},
+\end{equation}
+where $R_{nuc}$ is the rate of soot nucleation in \si{kmol/m^{3} s}, $T$ is the gas temperature in \si{K}, \ce{[C2H2]} is the concentration of gaseous acetylene in \si{kmol/m^3}. $f(S)$ is a function representing the surface growth rate dependence on soot particle surface area and is given by
+\begin{equation}
+    f(S) = \sqrt{\pi \left( \frac{6M_{C(s)}}{\pi \rho_{C(s)}} \right) ^{2/3}} \left[ \frac{\rho Y_{C(s)}}{M_{C(s)}} \right]^{1/3} [\rho N]^{1/6},
+\end{equation}
+where $M_{C(s)}$ is the molar mass of carbon in \si{kg/kmol}, $\rho$ is the gas density in \si{kg/m^3}, $\rho_{C(s)}$ is the solid soot particle density in \si{kg/m^3}, $Y_{C(S)}$ is the mass fraction of soot, and $N$ is the number of soot particles per \si{kg} of gas mixture.
 
-\subsubsection{Oxidation by Neoh et al.}
-\label{sss:X_NEOH}
+\subsubsection{Oxidation}
+\label{sss:oxidation}
 
-\subsubsection{Coagulation mechanisms}
-\label{sss:FUCHS_FRENK}
+\subsubsection{Coagulation}
+\label{sss:coagulation}
 
-%\subsubsection{Nucleation}
-%\label{sss:nucleation}
+%\subsubsection{Leung and Lindstedt 4-step kinetic mechanism}
+%\label{sss:LL}
 %
-%% Nucleation = formation of the smallest possible soot particles
-%% Note that we define what the smallest possible particle is
+%SootLib's simplest chemistry is a simplified kinetic mechanism presented by Leung and Lindstedt~\cite{Leung_1991} that consists of four steps: one each for soot nucleation, surface growth, oxidation, and coagulation.
 %
-%\subsubsubsection{Leung and Lindstedt (LL)}
+%\subsubsection{Lindstedt revised nucleation and surface growth}
+%\label{sss:LIN}
 %
-%\subsubsection{Surface growth}
-%\label{sss:growth}
+%\subsubsection{PAH nucleation and condensation}
+%\label{sss:PAH}
 %
-%\subsubsection{Oxidation}
-%\label{sss:oxidation}
+%\subsubsection{HACA growth and oxidation}
+%\label{sss:HACA}
 %
-%\subsubsection{Coagulation}
-%\label{sss:coagulation}
+%\subsubsection{Oxidation by Neoh et al.}
+%\label{sss:X_NEOH}
+%
+%\subsubsection{Coagulation mechanisms}
+%\label{sss:FUCHS_FRENK}
 
 %--------------------------------------------------------------------------
 \subsection{Particle size distribution and dynamics}
@@ -198,8 +226,8 @@ SootLib's simplest chemistry is a simplified kinetic mechanism presented by Leun
             \hline
             PSD model                                    & Model ID & \# Moments   \\
             \hline
-            Assumed monodisperse [CITATION]                        & MONO  & 2      \\
-            Assumed lognormal [CITATION]                           & LOGN  & 3  \\
+            Assumed monodisperse~\cite{Lignell_2008b}     & MONO  & 2      \\
+            Assumed lognormal~\cite{Lignell_2008b}        & LOGN  & 3  \\
             Quadrature method of moments~\cite{McGraw_1997} & QMOM  & 2, 4, 6  \\
             Method of moments with interpolative closure~\cite{Frenklach_2002b} & MOMIC & 2\textendash8  \\
             \hline
@@ -221,6 +249,9 @@ SootLib's simplest chemistry is a simplified kinetic mechanism presented by Leun
 
 %\subsubsection{Sectional model (SECT)}
 %\label{sss:sect}
+
+\subsection{Model combinations and limitations}
+\label{ss:limitations}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
