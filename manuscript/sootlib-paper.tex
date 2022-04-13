@@ -1,4 +1,5 @@
-%% 
+%! suppress = MathOperatorEscape
+%%
 %% Copyright 2007, 2008, 2009 Elsevier Ltd
 %% 
 %% This file is part of the 'Elsarticle Bundle'.
@@ -25,11 +26,13 @@
 %% \documentclass[authoryear,preprint,review,12pt]{elsarticle}
 
 %-------- packages --------
+\usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{hyperref}
 \usepackage{lineno}                 % line numbers
 \usepackage[version=4]{mhchem}      % chem formatting
 \usepackage{siunitx}                % units formatting
+\usepackage{rotating}
 
 %-------- package setup --------
 \sisetup{exponent-mode = scientific}
@@ -115,98 +118,133 @@ Soot models can generally be broken down into two interrelated parts: chemistry 
 \subsection{Chemistry}
 \label{ss:chemistry}
 
-Soot chemistry is typically divided into four main types: nucleation reactions describe how soot particles form from gaseous precursors and may or may not include the condensation of large polycyclic aromatic hydrocarbons (PAH); surface growth refers to particle growth by the chemical addition of gaseous species to existing soot particles; oxidation reactions describe soot particle size reduction by chemical reactions, usually with oxygen-based gaseous species; and coagulation defines the rate at which soot particles combine to form new particles (and may or may not include the aggregation of particles into large fractal soot structures). Note that while many coagulation processes are not technically chemical reactions, coagulation models are typically structured so as to be analagous to the strictly chemical steps and are usually categorized as a type of soot chemistry.
+Soot chemistry is typically divided into four main types: nucleation reactions describe how soot particles form from gaseous precursors and may or may not include the condensation of large polycyclic aromatic hydrocarbons (PAH); surface growth refers to particle growth by the chemical addition of gaseous species to existing soot particles; oxidation reactions describe soot particle size reduction by chemical reactions, usually with oxygen-based gaseous species; and coagulation defines the rate at which soot particles combine to form new particles (and may or may not include the aggregation of particles into large fractal soot structures). A complete soot chemistry model typically provides a mechanism for each of the four major steps, each of which occurs independently but all of which depend heavily on the composition and thermodynamic properties of the surrounding gas. Some models provide all four mechanisms, while later research tends to expand on earlier mechanisms or focus on one type. SootLib collects a range of models from the literature and implements them with a uniform interface, offering model developers a flexible testing method and giving research simulations a consistent framework for parametric simulations. Table~\ref{t:chem_models} summarizes the soot chemistry models implemented in SootLib;  Table~\ref{t:variables} defines the variables used in the presented models.
 
-A complete soot chemistry model typically provides a mechanism for each of the four major steps, each of which occurs independently but all of which depend heavily on the composition and thermodynamic properties of the surrounding gas. Some models provide all four mechanisms, while later research tends to expand on earlier mechanisms or focus on one type. SootLib collects a range of models from the literature and implements them with a uniform interface, offering model developers a flexible testing method and giving research simulations a consistent framework for parametric simulations. Table~\ref{t:chem_models} summarizes the soot chemistry models implemented in SootLib.
+In the following models, soot is defined as a collection of carbon atoms with lesser amounts of hydrogen and other elements. Soot particles are usually assumed to be spherical for purposes of calculating particle diameter and surface area; this is a reasonable assumption for nascent and relatively small soot particles, but may not be adequate to describe large soot agglomerates, which tend to exhibit fractal structures~\cite{Fuchs_1964}.
+
+Particle nucleation refers to the mechanisms by which the smallest possible soot particles are formed. The most common definition used in soot modeling literature defines a soot particle as having at least 100 carbon atoms~\cite{Leung_1991}; this is the value used by SootLib for kinetic-style nucleation mechanisms. The minimum soot particle size may also be defined by the nucleation mechanism itself, such as in SootLib's PAH nucleation mechansism, which defines the smallest soot particles as the result of a collsion between two PAH dimers. The simplest nucleation models link nucleation rate to the concentration of acetylene (\ce{C2H2}) in the gas mixture, while more complex models may account for any number of gaseous hydrocarbon species.
+
+Surface growth refers to the addition of carbon atoms to an existing soot particle from gaseous hydrocarbons. Simple surface growth models typically rely on acetylene (\ce{C2H2}) as the primary source of gaseous carbon, though other gaseous hydrocarbons may also contribute to particle surface growth to varying degrees. Additionally, surface growth models tend to include some dependence on the soot particle surface area since the availability of sites for addition of carbon atoms to existing particles tends to be a limiting factor in rate calculations.
+
+Soot oxidation refers to the process by which soot particles decrease in size due to reactions with gaseous species. Similar to surface growth, oxidation mechanisms may depend on the available surface area of oxidizing soot particles, which may or may not be a limiting factor depending on the thermodynamic state, composition of the gas mixture, and the amount of soot present. Early soot oxidation models tend to rely on \ce{O2} as the principal oxidant, though experimental studies show that \ce{OH} and sometimes \ce{O} can also contribute significantly to soot oxidation rates.
+
+Coagulation refers to the process by which soot particles increase in size due to collisions with other soot particles. It is closely related to the soot particle size distribution (PSD), which describes the population of soot particles in terms of size, mass, and number density. While most coagulation processes are not technically chemical reactions, coagulation models are typically structured so as to be analagous to the strictly chemical steps and are usually categorized as a type of soot chemistry. At present, SootLib does not include any coagulation models that account for the agglomeration of soot particles into large fractal aggregates.
+
+\begin{sidewaystable}
+    \caption{Summary of soot chemistry models implemented in SootLib. In mechanisms, \ce{C(s)} represents a soot particle, i.e. "solid" carbon, and \ce{C(s)^.} indicates a radical site on a soot particle, typically caused by hydrogen abstraction. Variable definitions for rate expressions can be found in Table~\ref{t:variables}. Rate expressions that involve multiple expressions or otherwise do not fit well in this table can be found in the appendices as noted.}
+    \label{t:chem_models}
+    \centering
+    \resizebox{\textwidth}{!}{
+        \begin{tabular}{l l l l l}
+            \hline
+            Chemistry type  & Model                 & Model ID     & Mechanism & Rate expression \\
+            \hline \hline
+            Nucleation      & Leung \& Lindstedt~\cite{Leung_1991}  & \texttt{LL}    & \ce{C2H2 -> 2C(s) + H2} & $R_{nuc} = \num{0.1e5} e^{-21100/T} \ce{[C2H2]}$\\
+                            & Lindstedt 2005~\cite{Lindstedt_2005}  & \texttt{LIN}   & \ce{C2H2 -> 2C(s) + H2} & $R_{nuc} = \num{0.63e4} e^{-21100/T} \ce{[C2H2]}$\\
+                            & PAH nucleation~\cite{Blanquart_2009}  & \texttt{PAH}   & dimerization of gaseous PAH  &\\
+            \hline
+            Surface growth  & Leung \& Lindstedt~\cite{Leung_1991}  & \texttt{LL}    & \ce{C2H2 + nC(s) ->} (n+2)\ce{C(s) + H2} & $R_{grw} = \num{0.6e4} e^{-21100/T} f(S) \ce{[C2H2]}$\\
+                & Lindstedt 1994~\cite{Lindstedt_1994}  & \texttt{LIN}   & \ce{C2H2 + nC(s) ->} (n+2)\ce{C(s) + H2} & $R_{grw} = \num{0.1e-11} e^{-12100/T} \ce{[C2H2]} 2M_0 MW_{C}$ \\
+                & HACA~\cite{Appel_2000,Frenklach_1994} & \texttt{HACA}  & \ce{C(s)-H + H <=> C(s)^. + H2}   & $R_{grw,f}=\num{4.2e13} e^{-13/RT} \ce{[H]}$ \\
+                &                                       &                &                                   & $R_{grw,r}=\num{3.9e12} e^{-11/RT} \ce{[H2]}$ \\
+                &                                       &                & \ce{C(s)^. + H -> C(s)-H}         & $R_{grw}=\num{2.0e13} \ce{[H]}$ \\
+                &                                       &                & \ce{C(s)^. + C2H2 -> C(s)-H + H}  & $R_{grw}=\num{8.0e7} T^{1.56} e^{-3.8/RT} \ce{[C2H2]}$\\
+                &                                       &                & \ce{C(s)-H + OH <=> C(s)^. + H2O} & $R_{grw,f}=\num{1e10} T^{0.734} e^{-1.43/RT} \ce{[OH]}$ \\
+                &                                       &                &                                   & $R_{grw,r}=\num{3.68e8} T^{1.139} e^{-17.1/RT} \ce{[H2O]}$ \\
+
+            \hline
+            Oxidation       & Leung \& Lindstedt~\cite{Leung_1991}   & \texttt{LL}   &  \ce{C(s) + 1/2O2 -> CO} & $R_{oxi,\ce{O2}} = \num{0.1e5} T^{1/2} e^{-19680/T} f(S) \ce{[O2]}$\\
+                            & HACA~\cite{Appel_2000,Frenklach_1994} & \texttt{HACA}  & \ce{C(s)^. + O2 -> 2CO + products} & $R_{oxi,\ce{O2}}=\num{2.2e12} e^{-7.5/RT} \ce{[O2]}$\\
+                            &                                       &                & \ce{C(s)-H + OH -> CO + products} & $R_{oxi,\ce{OH}}=0.13*1290 P_{\ce{OH}} T^{-1/2} $\\
+                            & Lee~\cite{Lee_1962} +
+                              Neoh~\cite{Neoh_1980,Neoh_1981}       & \texttt{LEE\textunderscore NEOH} & \ce{C + 1/2O2 -> CO} & $R_{oxi,\ce{O2}} = \num{1.085e4} P_{\ce{O2}} T^{-1/2} e^{-19778.24/T}$\\
+                            &                                       &                & \ce{C + OH -> CO + H} & $R_{oxi,\ce{OH}}=0.13*1290 P_{\ce{OH}} T^{-1/2}$ \\
+                            & NSC~\cite{Nagle_1962} +
+                              Neoh~\cite{Neoh_1980,Neoh_1981}       & \texttt{NSC\textunderscore NEOH} & \ce{C + 1/2O2 -> CO} & see~\ref{a:NSC}\\
+                            &                                       &                & \ce{C + OH -> CO + H} & $R_{oxi,\ce{OH}}=0.13*1290 P_{\ce{OH}} T^{-1/2}$\\
+            \hline
+            Coagulation     & Leung \& Lindstedt~\cite{Leung_1991}  & \texttt{LL}    & \ce{nC(s) -> C_n(s)} & $R_{coa} = -2C_a d_p^{1/2} \left( \frac{6k_B T}{\rho_{C(s)}}\right) (\rho N)^2$\\
+                            & Fuchs~\cite{Fuchs_1964,Seinfeld_2016} & \texttt{FUCHS} & \ce{nC(s) -> C_n(s)} & $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$ \\
+                            & Frenklach~\cite{Frenklach_2002}       & \texttt{FRENK} & \ce{nC(s) -> C_n(s)} & $K_{12}=\beta_{FM}\beta_{C}/(\beta_{FM}+\beta_{C})$ \\
+            \hline
+        \end{tabular}
+    }
+\end{sidewaystable}
 
 \begin{table}
-    \caption{Summary of soot chemistry models implemented in SootLib. In mechanisms, \ce{C(s)} represents a soot particle, i.e. "solid" carbon; \ce{C(s)^.} indicates a radical site on a soot particle, typically caused by hydrogen abstraction. $K_{12}$ is the generalized coagulation coefficient applied to two particles; variable definitions and details of SootLib's coagulation mechanisms can be found in Section~\ref{sss:coagulation}.}
-    \label{t:chem_models}
+    \caption{Variables used in soot chemistry rate expressions.}
+    \label{t:variables}
     \centering
     \resizebox{\textwidth}{!}{
         \begin{tabular}{l l l l}
             \hline
-            Chemistry type  & Model                 & Model ID     & Mechanism \\
+            Variable        & Definition                               & Value & Units \\
             \hline \hline
-            Nucleation      & Leung \& Lindstedt~\cite{Leung_1991}       & LL        & \ce{C2H2 -> 2C(s) + H2} \\
-                            & Lindstedt 2005~\cite{Lindstedt_2005b}     & LIN       & \ce{C2H2 -> 2C(s) + H2} \\
-                            & PAH nucleation~\cite{Blanquart_2009}      & PAH       & dimerization of gaseous PAH  \\
-            \hline
-            Surface growth  & Leung \& Lindstedt~\cite{Leung_1991}       & LL        & \ce{C2H2 + nC(s) ->} (n+2)\ce{C(s) + H2} \\
-                            & Lindstedt 1994~\cite{Lindstedt_1994}      & LIN       & \ce{C2H2 + nC(s) ->} (n+2)\ce{C(s) + H2} \\
-                            &                                           &           & independent of surface area \\
-                            & HACA~\cite{Appel_2000,Frenklach_1994}     & HACA      & \ce{C(s)-H + H <=> C(s)^. + H2} \\
-                            &                                           &           & \ce{C(s)^. + H -> C(s)-H} \\
-                            &                                           &           & \ce{C(s)^. + C2H2 -> C(s)-H + H} \\
-                            &                                           &           & \ce{C(s)-H + OH <=> C(s)^. + H2O} \\
-            \hline
-            Oxidation       & Leung \& Lindstedt~\cite{Leung_1991}       & LL        &  \ce{C(s) + 1/2O2 -> CO} \\
-                            & HACA~\cite{Appel_2000,Frenklach_1994}     & HACA      & \ce{C(s)^. + O2 -> 2CO + products} \\
-                            &                                           &           & \ce{C(s)-H + OH -> CO + products} \\
-                            & Lee~\cite{Lee_1962} +
-                              Neoh~\cite{Neoh_1980,Neoh_1981}           & LEE\_NEOH  & \ce{C + 1/2O2 -> CO} \\
-                            &                                           &           & \ce{C + OH -> CO + H} \\
-                            & NSC~\cite{Nagle_1962} +
-                              Neoh~\cite{Neoh_1980,Neoh_1981}           & NSC\_NEOH  & \ce{C + 1/2O2 -> CO} \\
-                            &                                           &           & \ce{C + OH -> CO + H} \\
-            \hline
-            Coagulation     & Leung \& Lindstedt~\cite{Leung_1991}       & LL        & \ce{nC(s) -> C_n(s)}  \\
-                            & Fuchs~\cite{Fuchs_1964,Seinfeld_2016}     & FUCHS     & $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$  \\
-                            & Frenklach~\cite{Frenklach_2002}           & FRENK     & $K_{12}=\beta_{FM}\beta_{C}/(\beta_{FM}+\beta_{C})$  \\
+            $C_a$           & Agglomeration rate constant              & 9.0    & N/A \\
+            $C_{min}$       & Number of carbon atoms in an incipient soot particle & 100 & N/A \\
+            \ce{[C2H2]}     & Concentration of gaseous acetylene       &        & \si{kmol/m^3} \\
+            \ce{[O2]}       & Concentration of gaseous oxygen          &        & \si{kmol/m^3} \\
+            $d_p$           & Soot particle diameter                   &        & \si{m} \\
+            $K_{12}$        & Generalized coagulation coefficient applied to two particles & &  \\
+            $M_k$           & k$^{th}$ moment of the soot particle size distribution &  & \si{kg^k/m^3} \\
+            $MW_{C}$        & Molar mass of carbon                     & 12.011 & \si{kg/kmol} \\
+            $N$             & Number of soot particles per \si{kg} gas &        & N/A \\
+            $N_A$           & Avogadro's number                        & \num{6.0221e26} & N/A \\
+            $P_{i}$         & Partial pressure of gaseous species $i$  &        & \si{atm} \\
+            $R_{nuc}$       & Rate of particle nucleation              &        & \si{kmol/m^{3} s} \\
+            $R_{grw}$       & Rate of particle surface growth          &        & \si{kmol/m^{2} s} \\
+%            $R_{grw,f}$     & Rate of particle surface growth, forward reaction &        & \si{kmol/m^{2} s} \\
+%            $R_{grw,r}$     & Rate of particle surface growth, reverse reaction &        & \si{kmol/m^{2} s} \\
+            $R_{oxi}$       & Rate of particle oxidation               &        & \si{kmol/m^{2} s} \\
+            $R_{coa}$       & Rate of particle coagulation             &        & \si{m^{3}/\# s} \\
+            $S$             & Particle surface area                    &        & \si{m^2/m^3}-gas \\
+            $T$             & Gas temperature                          &        & \si{K} \\
+            $Y_{C(S)}$      & Mass fraction of soot                    &        & N/A \\
+            $\beta_{C}$     & Continuum regime collision rate function      &        & \si{m^{3}/\# s} \\
+            $\beta_{FM}$    & Free-molecular regime collision rate function &        & \si{m^{3}/\# s} \\
+            $k_B$        & Boltzmann's constant                     & \num{1.3806e-23} & \si{J/K} \\
+            $\rho$          & Gas density                              &        & \si{kg/m^3} \\
+            $\rho_{C(s)}$   & Solid soot particle density              & 1850   & \si{kg/m^3} \\
             \hline
         \end{tabular}
     }
 \end{table}
 
-\subsubsection{Nucleation}
-\label{sss:nucleation}
+\subsubsection{Global kinetic mechanisms}
+\label{sss:global}
 
-Particle nucleation refers to the mechanisms by which the smallest possible soot particles are formed. The threshold that divides gas-phase molecules from the smallest soot particles is typically based on size. The most common definition used in soot modeling literature defines a soot particle as having at least 100 carbon atoms [TODO CITATION]; this is the value used by SootLib for kinetic-style nucleation mechanisms. The minimum soot particle size may also be defined by the nucleation mechanism itself, such as in SootLib's PAH nucleation mechansism, which defines the smallest soot particles as the result of a collsion between two PAH dimers.
+Global kinetic mechanisms, typically represented by Arrhenius-style rate expressions, are popular choices in combustion simulations involving soot, particularly in cases that require soot modeling but cannot afford the relatively high computational cost of detailed soot models or gas mechanisms. Because global models represent each type of soot chemistry with simplified and often empirical rate expressions, they do not capture all of the fundamental mechanisms of various soot phenomena, but they have the advantages of being relatively simple, easy to implement, and computationally inexpensive. In other words, global models tend to sacrifice accuracy in favor of high speed and low computational cost. Additionally, commonly used global models can serve as convenient points of reference when developing or testing modified or more complex soot models.
 
-SootLib's simplest chemistry is a simplified kinetic mechanism presented by Leung and Lindstedt (LL) that consists of four kinetic-style rate steps: one each for soot nucleation, surface growth, oxidation, and coagulation~\cite{Leung_1991}. The LL nucleation rate is given by
+SootLib's simplest chemistry model is a simplified kinetic mechanism presented by Leung and Lindstedt (\texttt{LL}) that consists of four Arrhenius-style rate expressions: one each for soot nucleation, surface growth, oxidation, and coagulation~\cite{Leung_1991}; refer to  Table~\ref{t:chem_models} for the complete rate expressions. Note that the surface growth and oxidation steps include a function $f(S)$ representing the surface growth and oxidation rates' dependence on soot particle surface area; specifically, it is assumed that the number of local active sites available for surface growth and oxidation reactions is proportional to the square root of the total particle surface area in the flame. If the surface area is given by $S=\pi d_p^2 \rho N$ and the soot particle diameter by $d_p=(6Y_{C(s)}/\pi \rho_{C(s)} N)^{1/3}$, this surface area dependence becomes
 \begin{equation}
-    R_{nuc} = \num{0.1e5} e^{-21100/T} \ce{[C2H2]},
+    \label{e:surface_area}
+    f(S) = \sqrt{\pi \left( \frac{6MW_{C}}{\pi \rho_{C(s)}} \right) ^{2/3}} \left[ \frac{\rho Y_{C(s)}}{MW_{C(s)}} \right]^{1/3} [\rho N]^{1/6}.
 \end{equation}
-where $R_{nuc}$ is the rate of soot nucleation in \si{kmol/m^{3} s}, $T$ is the gas temperature in \si{K}, and \ce{[C2H2]} is the concentration of gaseous acetylene in \si{kmol / m^3}.
+The Leung and Lindstedt model is included with SootLib as a point of reference because it is one of the most common global soot models used in combustion simulations. This model was developed using observations of laboratory-scale ethylene jet flames, and its accuracy and applicability are generally limited to conditions similar to those under which it was developed.
 
-\subsubsection{Surface growth}
-\label{sss:growth}
+Various modifications have been proposed to address the inaccuracies of the Leung and Lindstedt model. Lindstedt proposed an alteration to the Leung and Lindstedt nucleation step's preexponential factor to increase accuracy without changing the expression's form~\cite{Lindstedt_2005}. Lindstedt also proposed a modified expression for particle surface growth that eliminates its dependence on particle surface area in favor of dependence on the particle number density~\cite{Lindstedt_1994}. In SootLib, these models can be accessed by specifying \texttt{LIN} for the nucleation and surface growth chemistry, respectively.
 
-The LL surface growth rate is given by
-\begin{equation}
-    R_{grw} = \num{0.6e4} e^{-21100/T} f(S) \ce{[C2H2]},
-\end{equation}
-where $R_{nuc}$ is the rate of soot nucleation in \si{kmol/m^{3} s}, $T$ is the gas temperature in \si{K}, \ce{[C2H2]} is the concentration of gaseous acetylene in \si{kmol/m^3}. $f(S)$ is a function representing the surface growth rate dependence on soot particle surface area and is given by
-\begin{equation}
-    f(S) = \sqrt{\pi \left( \frac{6M_{C(s)}}{\pi \rho_{C(s)}} \right) ^{2/3}} \left[ \frac{\rho Y_{C(s)}}{M_{C(s)}} \right]^{1/3} [\rho N]^{1/6},
-\end{equation}
-where $M_{C(s)}$ is the molar mass of carbon in \si{kg/kmol}, $\rho$ is the gas density in \si{kg/m^3}, $\rho_{C(s)}$ is the solid soot particle density in \si{kg/m^3}, $Y_{C(S)}$ is the mass fraction of soot, and $N$ is the number of soot particles per \si{kg} of gas mixture.
+The Leung and Lindstedt oxidation expression is itself based on an earlier model presented by Lee et al.~\cite{Lee_1962}, which models the oxidation of soot particles by \ce{O2} with a global rate expression (see Table~\ref{t:chem_models}). Nagle and Strickland-Constable~\cite{Nagle_1962} also presented a commonly used model for soot oxidation by \ce{O2} in which the rate of oxidation depends on a nonlinear combination of Arrhenius-style rate constants applied to the partial pressure of \ce{O2}; see~\ref{a:NSC} for the full rate expression. These early soot oxidation models, however, do not take into account the influence of oxidation by \ce{OH}, which can be significant for certain flame configurations and fuels~\cite{Neoh_1980}. To account for this, SootLib adds expressions for \ce{OH} oxidation presented by Neoh et al.~\cite{Neoh_1981} to the oxidation expressions presented by Lee et al. and Nagle and Strickland-Constable, resulting in the \texttt{LEE\textunderscore NEOH} and \texttt{NSC\textunderscore NEOH} options for soot oxidation in SootLib. Leung and Lindstedt explicitly acknowledge the lack of oxidation by \ce{OH} in their model, but consider their one-step oxidation mechanism sufficient for their purposes; in light of their reasoning and the widespread use of the Leung and Lindstedt soot model as published, SootLib does not alter or add to the existing Leung and Lindstedt oxidation step.
 
-\subsubsection{Oxidation}
-\label{sss:oxidation}
+\subsubsection{Physics-based models}
+\label{sss:physics-models}
 
-\subsubsection{Coagulation}
+Physics-based models and mechanisms attempt to increased the accuracy of more empirical models by using multiple elementary reaction steps to represent actual soot behavior rather than relying on the empiricism inherent in global reaction models. By accounting for fundamental phenomena, physics-based models may result in increased accuracy at the cost of computational speed and efficiency. The two-step oxidation models presented above are simple examples of how using multiple reaction steps can increase accuracy; by accounting for oxidation by both \ce{O2} and \ce{OH}, such models can use validated rate data for elementary reaction steps, potentially resulting in higher accuracy under certain coonditions than a model that only considers one oxidation species or combines both dependencies into one empirical rate expression.
+
+The hydrogen-abstraction acetylene-addition (HACA) mechanism is a popular multi-step model for soot surface growth and oxidation~\cite{Appel_2000}. It breaks down the global dependence of surface growth on acetylene into elementary reaction steps, each with its own Arrhenius-style rate expression. This approach potentially increases the accuracy of the model by reducing the amount of empiricism in favor of a physics-based reaction mechanism.
+
+[HACA FIGURE HERE]
+
+Another compelling physics-based model for soot particle nucleation considers the inception of soot particles due to the collision of polycyclic aromatic hydrocarbons (PAH), as presented by Blanquart and Pitsch~\cite{Blanquart_2009c}. In it, incipient soot particles are created by the collision of two PAH dimers, which are themselves created by the collision of two PAH molecules. This overrides the baseline used by global models, which define soot particles as having at least 100 carbon atoms, but is much closer to reality, in which all chemical species, soot particles included, exist on a spectrum and behave according to their size and mass. Experimental literature indicates that soot produced by gaseous fuels tends to nucleate via PAH collisions, though the exact mechanisms are unknown and depend on the fuel, its surrounding environment, and various other factors [CITATION]. The present PAH nucleation model also accounts for condensation of PAH dimers onto existing soot particles, which represents an additional surface growth mechanism.
+
+[PAH NUCLEATION/CONDENSATION FIGURE HERE]
+
+\subsubsection{Coagulation mechanisms}
 \label{sss:coagulation}
 
-%\subsubsection{Leung and Lindstedt 4-step kinetic mechanism}
-%\label{sss:LL}
-%
-%SootLib's simplest chemistry is a simplified kinetic mechanism presented by Leung and Lindstedt~\cite{Leung_1991} that consists of four steps: one each for soot nucleation, surface growth, oxidation, and coagulation.
-%
-%\subsubsection{Lindstedt revised nucleation and surface growth}
-%\label{sss:LIN}
-%
-%\subsubsection{PAH nucleation and condensation}
-%\label{sss:PAH}
-%
-%\subsubsection{HACA growth and oxidation}
-%\label{sss:HACA}
-%
-%\subsubsection{Oxidation by Neoh et al.}
-%\label{sss:X_NEOH}
-%
-%\subsubsection{Coagulation mechanisms}
-%\label{sss:FUCHS_FRENK}
+SootLib includes three coagulation mechanisms, all of which interact strongly with the particle size distribution (PSD) model, discussed in Section~\ref{ss:PSD_dynamics}. The simplest coagulation model is that presented as part of the Leung and Lindstedt model (\texttt{LL}), which describes particle coagulation with a normal square dependence using an empirical agglomeration rate coefficient~\cite{Leung_1991}.
+
+Physics-based coagulation models represent the coagulation rate of two particles with the expression $R_{coa,12}=K_{12}N_1N_2$, where $N_1$ and $N_2$ are the number density of particles 1 and 2, respectively. $K_{12}$ is coagulation coefficient given by $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)$, where $D_{p1}$ and $D_{p2}$ are the diameters and $D_1$ and $D_2$ are the Brownian diffusivites of particles 1 and 2, respectively~\cite{Seinfeld_2016}. Particle diffusivity, in turn, depends on the surrounding conditions. In the continuum regime, when the mean free path $\lambda_p$ of a diffusing particle is comparable to its radius, its diffusion can be described by the Einstein-Stokes relation; in the free-molecular regime, when the mean free path $\lambda_p$ of the particle is much larger than its radius, diffusion can be described with kinetic theory. Fuchs proposed a generalized coagulation coefficient of the form $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$, where $\beta$ is a correction factor that accounts for the kinetic effect of the particle regime~\cite{Fuchs_1964, Seinfeld_2016}.
 
 %--------------------------------------------------------------------------
 \subsection{Particle size distribution and dynamics}
@@ -341,9 +379,51 @@ This research did not receive any specific grant from funding agencies in the pu
 %
 %\end{thebibliography}
 
-\section*{Illustrative Examples}
-Optional : you may include one explanatory  video that will appear next to your article, in the right hand side panel. (Please upload any video as a single supplementary file with your article. Only one MP4 formatted, with 50MB maximum size, video is possible per article. Recommended video dimensions are 640 x 480 at a maximum of 30 frames / second. Prior to submission please test and validate your .mp4 file at  \url{http://elsevier-apps.sciverse.com/GadgetVideoPodcastPlayerWeb/verification} . This tool will display your video exactly in the same way as it will appear on ScienceDirect. )
+\appendix
 
+\section{Soot chemistry model rate details}
+
+\subsection{Nagle and Strickland-Constable oxidation rate}
+\label{a:NSC}
+
+The rate expression for soot particle oxidation by \ce{O2} presented by Nagle and Strickland-Constable~\cite{Nagle_1962} is
+\begin{equation}
+    R_{oxi} = \rho_{\ce{C(s)}} \left[ k_A P_{\ce{O2}} \left( \frac{x}{1+k_Z P_{\ce{O2}}}\right) + k_B P_{\ce{O2}} (1-x) \right]
+\end{equation}
+where
+\begin{equation}
+    x=\frac{1}{1+\frac{k_T}{k_B P_{\ce{O2}}}}
+\end{equation}
+and
+\begin{equation}
+    k_A = 20e^{-15098/T}
+\end{equation}
+\begin{equation}
+    k_B = \num{4.46e-3}e^{-7650/T}
+\end{equation}
+\begin{equation}
+    k_T = \num{1.51e5}e^{-48817/T}
+\end{equation}
+\begin{equation}
+    k_Z = 21.3e^{2063/T}
+\end{equation}
+
+\subsection{Fuchs generalized coagulation coefficient}
+\label{a:FUCHS}
+The Fuchs generalized coagulation coefficient applied to two particles $K_{12}$ takes the form $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$, where
+\begin{equation}
+    \beta = \left[ \frac{D_{p1}+D_{p2}}{D_{p1}+D_{p2}+2(g_1^2+g_2^2)^{1/2}} + \frac{8(1/\alpha)(D_1+D_2)}{(\={c}_1^2+\={c}_2^2)^{1/2}(D_{p1}+D_{p2})} \right]^{-1}
+\end{equation}
+and 
+\begin{align}
+    \={c}_i &= \left( \frac{8k_B T}{\pi m_i} \right)^{1/2} \\
+    g_i &= \frac{\sqrt{2}}{3D_{pi}\lambda_i} \left[ (D_{pi}+\lambda_i)^3 - (D_{pi}^2+\lambda_i^2)^{3/2} \right] - D_{pi} \\
+    \lambda_i &= \frac{8D_i}{\pi \={c}_i} \\
+    D_i &= \frac{k_B T C_c}{3\pi \mu D_{pi}}
+\end{align}
+
+\subsection{Frenklach modified coagulation coefficient}
+\label{a:FRENK}
 
 \section*{Required Metadata}
 
