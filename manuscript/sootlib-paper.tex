@@ -41,6 +41,7 @@
 \usepackage{fontawesome}
 \usepackage{enumitem}
 \usepackage{graphicx}
+\usepackage{textcomp}
 \setlist{itemsep=0pt}
 
 %-------- package setup --------
@@ -146,9 +147,9 @@ Physics-based models and mechanisms aim for high accuracy by using multiple elem
 SootLib collects a range of models from the literature and implements them with a uniform interface, offering modelers a flexible testing framework and consistent interface for model development and simulations. Table~\ref{t:chem_models} summarizes the soot chemistry models implemented in SootLib.
 
 \begin{sidewaystable}
+    \centering
     \caption{Summary of soot chemistry models implemented in SootLib. In mechanisms, \ce{C(s)} represents a soot particle, i.e. "solid" carbon, and \ce{C(s)^.} indicates a radical site on a soot particle, typically caused by hydrogen abstraction. Variable definitions for rate expressions can be found in~\ref{s:nomenclature}. Rate expressions that involve multiple expressions or otherwise do not fit well in this table can be found in the appendices as noted.}
     \label{t:chem_models}
-    \centering
     \resizebox{\textwidth}{!}{
         \begin{tabular}{l l l l l}
             \hline
@@ -178,9 +179,10 @@ SootLib collects a range of models from the literature and implements them with 
                               Neoh~\cite{Neoh_1980,Neoh_1981}       & \texttt{NSC\textunderscore NEOH} & \ce{C + 1/2O2 -> CO} & see~\ref{a:NSC}\\
                             &                                       &                & \ce{C + OH -> CO + H} & $R_{oxi,\ce{OH}}=0.13*1290 P_{\ce{OH}} T^{-1/2}$\\
             \hline
-            Coagulation     & Leung \& Lindstedt~\cite{Leung_1991}  & \texttt{LL}    & \ce{nC(s) -> C_n(s)} & $R_{coa} = -2C_a d_p^{1/2} \left( \frac{6k_B T}{\rho_s}\right) (\rho N)^2$\\
-                            & Fuchs~\cite{Fuchs_1964,Seinfeld_2016} & \texttt{FUCHS} & \ce{nC(s) -> C_n(s)} & see~\ref{a:FUCHS} \\
-                            & Frenklach~\cite{Frenklach_2002b}       & \texttt{FRENK} & \ce{nC(s) -> C_n(s)} & see~\ref{a:FRENK} \\
+            Coagulation    & Continuum regime~\cite{Seinfeld_2016} & \texttt{CONTINUUM} & \ce{nC(s) -> C_n(s)} & see~\ref{a:coag} \\ & Free-molecular regime~\cite{Seinfeld_2016}  & \texttt{FM}    & \ce{nC(s) -> C_n(s)} & see~\ref{a:coag} \\
+            & Harmonic mean~\cite{Frenklach_2002b} & \texttt{HM} & \ce{nC(s) -> C_n(s)} & see~\ref{a:coag} \\
+                            & Fuchs~\cite{Fuchs_1964,Seinfeld_2016} & \texttt{FUCHS} & \ce{nC(s) -> C_n(s)} & see~\ref{a:coag} \\
+
             \hline
         \end{tabular}
     }
@@ -230,11 +232,9 @@ In addition to the empirical models above, SootLib also includes the HACA mechan
 
 Coagulation refers to the process by which soot particles increase in size due to collisions with other soot particles. It is closely related to the soot particle size distribution (PSD), which describes the population of soot particles in terms of size, mass, or number density. While most coagulation processes are not technically chemical reactions, coagulation models are typically structured analogously to the strictly chemical reaction steps and are usually categorized as a type of soot chemistry.
 
-SootLib includes three coagulation mechanisms, all of which interact strongly with the PSD models discussed in Section~\ref{ss:PSD_dynamics}. The simplest coagulation model is that presented by Leung and Lindstedt (\texttt{LL}), which describes particle coagulation with a normal square dependence using an empirical agglomeration rate coefficient~\cite{Leung_1991}.
+SootLib includes four coagulation mechanisms, all of which interact strongly with the PSD models discussed in Section~\ref{ss:PSD_dynamics}. Physics-based coagulation models represent the coagulation rate of two particles with the expression $R_{coa,12}=K_{12}N_1N_2$, where $N_1$ and $N_2$ are the number density of particles 1 and 2, respectively. $K_{12}$ is coagulation coefficient given by $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)$, where $D_{p1}$ and $D_{p2}$ are the diameters and $D_1$ and $D_2$ are the Brownian diffusivities of colliding particles 1 and 2, respectively~\cite{Seinfeld_2016}. Particle diffusivity, in turn, depends on the surrounding conditions. In the continuum regime (\texttt{CONTINUUM}), when the mean free path $\lambda_p$ of a diffusing particle is comparable to or less than its radius ($Kn\ll1$), particle diffusion can be calculated with the Einstein-Stokes relation; in the free-molecular regime (\texttt{FM}), when the mean free path $\lambda_p$ of the particle is much larger than its radius ($Kn\gg1$), particle diffusion is described by kinetic theory.
 
-Physics-based coagulation models represent the coagulation rate of two particles with the expression $R_{coa,12}=K_{12}N_1N_2$, where $N_1$ and $N_2$ are the number density of particles 1 and 2, respectively. $K_{12}$ is coagulation coefficient given by $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)$, where $D_{p1}$ and $D_{p2}$ are the diameters and $D_1$ and $D_2$ are the Brownian diffusivities of colliding particles 1 and 2, respectively~\cite{Seinfeld_2016}. Particle diffusivity, in turn, depends on the surrounding conditions. In the continuum regime, when the mean free path $\lambda_p$ of a diffusing particle is comparable to or less than its radius ($Kn\ll1$), particle diffusion can be calculated with the Einstein-Stokes relation; in the free-molecular regime, when the mean free path $\lambda_p$ of the particle is much larger than its radius ($Kn\gg1$), particle diffusion is described by kinetic theory. Depending on the external conditions, soot particle coagulation can occur at either limit or anywhere in between, a state referred to as the transition regime.
-
-Fuchs (\texttt{FUCHS}) proposed a generalized coagulation coefficient of the form $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$, where $\beta$ is a correction factor that accounts for the kinetic effect of the particle regime (see~\ref{a:FUCHS})~\cite{Fuchs_1964, Seinfeld_2016}. In the continuum and free-molecular limits, the Fuchs form of the coagulation coefficient simplifies to the values calculated from the Einstein-Stokes and kinetic theory expressions, respectively. Frenklach (\texttt{FRENK}) uses a harmonic mean of the continuum and free-molecular values to represent the transition regime, reporting that the approach reproduces results given by the Fuchs form of the coagulation coefficient within about 20\% accuracy~\cite{Frenklach_2002b,Kazakov_1998}.
+Depending on the external conditions, soot particle coagulation can occur at either limit or anywhere in between, a state referred to as the transition regime. Frenklach et al. uses a harmonic mean~(\texttt{HM}) of the continuum and free-molecular values to represent the transition regime, reporting that the approach reproduces results given by the Fuchs form of the coagulation coefficient within about 20\% accuracy~\cite{Frenklach_2002b,Kazakov_1998}. Fuchs (\texttt{FUCHS}) proposed a generalized coagulation coefficient of the form $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$, where $\beta$ is a correction factor that accounts for the kinetic effect of the particle regime (see~\ref{a:FUCHS})~\cite{Fuchs_1964, Seinfeld_2016}. In the continuum and free-molecular limits, the Fuchs form of the coagulation coefficient simplifies to the values calculated from the Einstein-Stokes and kinetic theory expressions, respectively.
 
 %--------------------------------------------------------------------------
 \subsection{Particle size distribution and dynamics}
@@ -326,7 +326,7 @@ The following points apply to individual soot chemistry mechanisms:
     \item The \texttt{LL} model is included with SootLib as a point of reference because it is one of the most common global soot models used in combustion simulations. This model was developed using observations of laboratory-scale ethylene jet flames, and its accuracy and applicability are generally limited to conditions similar to those under which it was developed.
     \item The \texttt{LL} mechanisms were designed to be used together, but can still provide physically meaningful results when separated.
     \item The \texttt{LIN} surface growth mechanism was designed as an improvement to the \texttt{LL} surface growth mechanism and performs most reliably when combined with other \texttt{LL} mechanisms or the \texttt{LIN} nucleation mechanism (which was developed later by the same author).
-    \item The \texttt{HACA} surface growth and oxidation mechanisms were not designed to be used separately, but may still perform adequately. Use caution when separating them.
+    \item The \texttt{HACA} surface growth and oxidation mechanisms were not designed to be used separately. The SootLib code will produce an error if the user attempts to combine HACA surface growth with non-HACA oxidation or vice versa.
     \item The \texttt{PAH} nucleation mechanism also includes a PAH condensation mechanism. This is by design in order to more closely adhere to the model as presented by its authors~\cite{Blanquart_2009c}. At present, the two cannot be separated, though this may change in future releases.
 \end{itemize}
 
@@ -397,12 +397,12 @@ SootLib's major functionalities can be summarized as follows:
     \item Calculates moment source terms (Eq.~\ref{e:momTransEq}) for the soot PSD given thermodynamic state details and chemistry mechanisms chosen by the user; and
     \item Calculates mass fraction source terms for gaseous chemical species affected by soot chemistry, including PAH where appropriate.
 \end{itemize}
-Auxiliary functionalities and features include the following:
-\begin{itemize}
-    \item \texttt{str2-SootLibType} functions to facilitate conversion of string values to SootLib's internal enum types for gas species, PAH species, and mechanism specifiers;
-    \item Custom \texttt{dimerStruct} structure for access to additional details related to PAH nucleation and condensation calculations; and
-    \item Object-oriented, modular mechanism structure designed to facilitate extension to additional mechanisms and model types.
-\end{itemize}
+%Auxiliary functionalities and features include the following:
+%\begin{itemize}
+%%    \item \texttt{str2-SootLibType} functions to facilitate conversion of string values to SootLib's internal enum types for gas species, PAH species, and mechanism specifiers;
+%    \item Custom \texttt{dimerStruct} structure for access to additional details related to PAH nucleation and condensation calculations; and
+%    \item Object-oriented, modular mechanism structure designed to facilitate extension to additional mechanisms and model types.
+%\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -580,13 +580,14 @@ and
     k_Z = 21.3e^{2063/T}
 \end{equation}
 
-\subsection{Fuchs generalized coagulation coefficient}
-\label{a:FUCHS}
+\subsection{Coagulation in the transition regime}
+\label{a:coag}
+
 The Fuchs generalized coagulation coefficient~\cite{Fuchs_1964} for the collision between two particles takes the form $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$, where
 \begin{equation}
     \beta = \left[ \frac{D_{p1}+D_{p2}}{D_{p1}+D_{p2}+2(g_1^2+g_2^2)^{1/2}} + \frac{8(1/\alpha)(D_1+D_2)}{(\bar{c}_1^2+\bar{c}_2^2)^{1/2}(D_{p1}+D_{p2})} \right]^{-1}
 \end{equation}
-and 
+and
 \begin{align}
     \bar{c}_i &= \left( \frac{8k_B T}{\pi m_i} \right)^{1/2}, \\
     g_i &= \frac{\sqrt{2}}{3D_{pi}l_i} \left[ (D_{pi}+l_i)^3 - (D_{pi}^2+l_i^2)^{3/2} \right] - D_{pi}, \\
@@ -602,9 +603,6 @@ In the free-molecular limit ($Kn \rightarrow \infty)$, the coagulation coefficie
     K_{12} = \pi (R_{p1}+R_{p2})^2 (\bar{c}_1^2 + \bar{c}_2^2)^{1/2},
 \end{equation}
 which is equal to the expression obtained directly from kinetic theory~\cite{Seinfeld_2016}.
-
-\subsection{Frenklach coagulation coefficient}
-\label{a:FRENK}
 
 The simplified transition regime model for the coagulation coefficient presented by Frenklach~\cite{Frenklach_2002b} also takes the form $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$, but the collision factor $\beta$ is calculated as the harmonic mean of the continuum ($\beta_c$) and free-molecular ($\beta_f$) regime limit values,
 \begin{equation}
