@@ -42,6 +42,7 @@
 \usepackage{enumitem}
 \usepackage{graphicx}
 \usepackage{textcomp}
+\usepackage{booktabs}               % table rules
 \setlist{itemsep=0pt}
 
 %-------- package setup --------
@@ -156,20 +157,20 @@ SootLib collects a range of models from the literature and implements them with 
             Chemistry type  & Model                 & Model ID     & Mechanism & Rate expression \\
             \hline \hline
             Nucleation      & Leung \& Lindstedt~\cite{Leung_1991}  & \texttt{LL}    & \ce{C2H2 -> 2C(s) + H2} & $R_{nuc} = \num{0.1e5} e^{-21100/T} \ce{[C2H2]}$\\
-                            & Lindstedt 2005~\cite{Lindstedt_2005}  & \texttt{LIN}   & \ce{C2H2 -> 2C(s) + H2} & $R_{nuc} = \num{0.63e4} e^{-21100/T} \ce{[C2H2]}$\\
+                            & Lindstedt 2005~\cite{Lindstedt_2005}  & \texttt{LIN}   & \ce{C2H2 -> 2C(s) + H2} & $R_{nuc} = \num{0.1e-11} e^{-12100/T} \ce{[C2H2]}$\\
                             & PAH nucleation~\cite{Blanquart_2009}  & \texttt{PAH}   & dimerization of gaseous PAH  &\\
             \hline
             Surface growth  & Leung \& Lindstedt~\cite{Leung_1991}  & \texttt{LL}    & \ce{C2H2 + nC(s) ->} (n+2)\ce{C(s) + H2} & $R_{grw} = \num{0.6e4} e^{-21100/T} f(S) \ce{[C2H2]}$\\
                 & Lindstedt 1994~\cite{Lindstedt_1994}  & \texttt{LIN}   & \ce{C2H2 + nC(s) ->} (n+2)\ce{C(s) + H2} & $R_{grw} = \num{0.1e-11} e^{-12100/T} \ce{[C2H2]} 2M_0 MW_C$ \\
                 & HACA~\cite{Appel_2000,Frenklach_1994} & \texttt{HACA}  & \ce{C(s)-H + H <=> C(s)^. + H2}   & $R_{grw,f}=\num{4.2e13} e^{-13/RT} \ce{[H]}$ \\
                 &                                       &                &                                   & $R_{grw,r}=\num{3.9e12} e^{-11/RT} \ce{[H2]}$ \\
-                &                                       &                & \ce{C(s)^. + H -> C(s)-H}         & $R_{grw}=\num{2.0e13} \ce{[H]}$ \\
+            &                                       &                & \ce{C(s)-H + OH <=> C(s)^. + H2O} & $R_{grw,f}=\num{1e10} T^{0.734} e^{-1.43/RT} \ce{[OH]}$ \\
+            &                                       &                &                                   & $R_{grw,r}=\num{3.68e8} T^{1.139} e^{-17.1/RT} \ce{[H2O]}$ \\
+            &                                       &                & \ce{C(s)^. + H -> C(s)-H}         & $R_{grw}=\num{2.0e13} \ce{[H]}$ \\
                 &                                       &                & \ce{C(s)^. + C2H2 -> C(s)-H + H}  & $R_{grw}=\num{8.0e7} T^{1.56} e^{-3.8/RT} \ce{[C2H2]}$\\
-                &                                       &                & \ce{C(s)-H + OH <=> C(s)^. + H2O} & $R_{grw,f}=\num{1e10} T^{0.734} e^{-1.43/RT} \ce{[OH]}$ \\
-                &                                       &                &                                   & $R_{grw,r}=\num{3.68e8} T^{1.139} e^{-17.1/RT} \ce{[H2O]}$ \\
 
             \hline
-            Oxidation       & Leung \& Lindstedt~\cite{Leung_1991}   & \texttt{LL}   &  \ce{C(s) + 1/2O2 -> CO} & $R_{oxi,\ce{O2}} = \num{0.1e5} T^{1/2} e^{-19680/T} f(S) \ce{[O2]}$\\
+            Oxidation       & Leung \& Lindstedt~\cite{Leung_1991}   & \texttt{LL}   &  \ce{C(s) + 1/2O2 -> CO} & $R_{oxi,\ce{O2}} = \num{0.1e5} T^{1/2} e^{-19680/T} \ce{[O2]}$\\
                             & HACA~\cite{Appel_2000,Frenklach_1994} & \texttt{HACA}  & \ce{C(s)^. + O2 -> 2CO + products} & $R_{oxi,\ce{O2}}=\num{2.2e12} e^{-7.5/RT} \ce{[O2]}$\\
                             &                                       &                & \ce{C(s)-H + OH -> CO + products} & $R_{oxi,\ce{OH}}=0.13*1290 P_{\ce{OH}} T^{-1/2} $\\
                             & Lee~\cite{Lee_1962} +
@@ -230,19 +231,48 @@ In addition to the empirical models above, SootLib also includes the HACA mechan
 \subsubsection{Coagulation}
 \label{sss:coa}
 
-Coagulation refers to the process by which soot particles increase in size due to collisions with other soot particles. It is closely related to the soot particle size distribution (PSD), which describes the population of soot particles in terms of size, mass, or number density. While most coagulation processes are not technically chemical reactions, coagulation models are typically structured analogously to the strictly chemical reaction steps and are usually categorized as a type of soot chemistry.
+Coagulation refers to the process by which soot particles increase in size due to collisions with other soot particles. It is closely related to the soot particle size distribution (PSD), which describes the population of soot particles in terms of size, mass, or number density. While most coagulation processes are not technically chemical reactions, coagulation models are typically structured analogously to the strictly chemical reaction steps and are usually categorized as a type of soot chemistry. SootLib includes four coagulation mechanisms, all of which interact strongly with the PSD models discussed in Section~\ref{ss:PSD_dynamics}.
 
-SootLib includes four coagulation mechanisms, all of which interact strongly with the PSD models discussed in Section~\ref{ss:PSD_dynamics}. Physics-based coagulation models represent the coagulation rate of two particles with the expression $R_{coa,12}=K_{12}N_1N_2$, where $N_1$ and $N_2$ are the number density of particles 1 and 2, respectively. $K_{12}$ is coagulation coefficient given by $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)$, where $D_{p1}$ and $D_{p2}$ are the diameters and $D_1$ and $D_2$ are the Brownian diffusivities of colliding particles 1 and 2, respectively~\cite{Seinfeld_2016}. Particle diffusivity, in turn, depends on the surrounding conditions. In the continuum regime (\texttt{CONTINUUM}), when the mean free path $\lambda_p$ of a diffusing particle is comparable to or less than its radius ($Kn\ll1$), particle diffusion can be calculated with the Einstein-Stokes relation; in the free-molecular regime (\texttt{FM}), when the mean free path $\lambda_p$ of the particle is much larger than its radius ($Kn\gg1$), particle diffusion is described by kinetic theory.
+In general, the coagulation rate of two particles can be represented by the expression $R_{coa}=K_{12}N_1N_2$, where $N_1$ and $N_2$ are the number densities of the first and second particles, respectively. $K_{12}$ is the coagulation coefficient, given by
+\begin{equation} \label{e:soot-coag-K12}
+K_{12}=2\pi (d_{1}+d_{2})(D_1+D_2),
+\end{equation}
+where $d_{1}$ and $d_{2}$ are the diameters and $D_1$ and $D_2$ are the Brownian diffusivities of the colliding particles~\cite{Seinfeld_2016}. Particle diffusivity, in turn, depends on the surrounding conditions. In the continuum regime (\texttt{CONTINUUM}), when the mean free path $\lambda_p$ of a diffusing particle is comparable to or less than its radius ($Kn\ll1$), particle diffusion can be calculated with the Einstein-Stokes relation; in the free-molecular regime (\texttt{FM}), when the mean free path $\lambda_p$ of the particle is much larger than its radius ($Kn\gg1$), particle diffusion can be described by kinetic theory.
 
-Depending on the external conditions, soot particle coagulation can occur at either limit or anywhere in between, a state referred to as the transition regime. Frenklach et al. uses a harmonic mean~(\texttt{HM}) of the continuum and free-molecular values to represent the transition regime, reporting that the approach reproduces results given by the Fuchs form of the coagulation coefficient within about 20\% accuracy~\cite{Frenklach_2002b,Kazakov_1998}. Fuchs (\texttt{FUCHS}) proposed a generalized coagulation coefficient of the form $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$, where $\beta$ is a correction factor that accounts for the kinetic effect of the particle regime (see~\ref{a:FUCHS})~\cite{Fuchs_1964, Seinfeld_2016}. In the continuum and free-molecular limits, the Fuchs form of the coagulation coefficient simplifies to the values calculated from the Einstein-Stokes and kinetic theory expressions, respectively.
+Depending on the surrounding conditions, soot coagulation can occur at either limit or anywhere in between. Fuchs proposed a generalized coagulation coefficient of the form $K_{12}=2\pi (d_{p1}+d_{p2})(D_1+D_2)\beta$, where $\beta$ is a correction factor that accounts for the kinetic effect of the particle regime~\cite{Fuchs_1964, Seinfeld_2016}. In the continuum and free-molecular limits, the Fuchs form of the coagulation coefficient simplifies to the values calculated from the Einstein-Stokes and kinetic theory expressions, respectively. Alternatively, the coagulation coefficient in the transition regime can be reasonably approximated by the harmonic mean of the continuum and free-molecular limits~\cite{Kazakov_1998,Frenklach_2002b}. Frenklach and coworkers reported that using a harmonic mean of the continuum and free-molecular values to represent the transition regime reproduced results given by the Fuchs form of the coagulation coefficient within about 20\%~\cite{Frenklach_2002b}.
+
+SootLib implements four soot coagulation mechanisms derived from the models above. Users can choose the continuum limit (\texttt{CONTINUUM}), the free-molecular limit (\texttt{FM}), the harmonic mean representation of the transition regime (\texttt{HM}), or the Fuchs form of the coagulation coefficient (\texttt{FUCHS}).
 
 %--------------------------------------------------------------------------
 \subsection{Particle size distribution and dynamics}
 \label{ss:PSD_dynamics}
 
-In addition to the chemical reactions that influence their creation and destruction, soot particles also undergo non-chemical changes, typically in the form of coagulation, aggregation, and their inverse processes. As a result, it becomes computationally complex to treat each possible combination of carbon atoms as its own chemical species. Instead, we describe the collection of soot particles as a whole with a particle size distribution (PSD). There are two common approaches to the soot PSD: direct/sectional models and moment methods. Direct methods account for every possible particle size, and sectional methods divide the domain of possible soot particle sizes into discrete ranges based on size or mass; in both cases, the number density of soot particles of each increases or decreases according to defined soot chemistry and mechanisms. The more divisions that are defined in a sectional method, the closer the approximation gets to describing the true distribution (as a direct method would), but the higher the computational cost becomes.
+In addition to the chemical reactions that influence their creation and destruction, soot particles also undergo non-chemical changes, typically in the form of coagulation, aggregation, and their inverse processes. As a result, it becomes computationally complex to treat each possible combination of carbon atoms as its own chemical species. Instead, we describe the collection of soot particles as a whole with a particle size distribution (PSD). There are two common approaches to the soot PSD: direct/sectional models and moment methods. Direct methods account for every possible particle size, and sectional methods divide the domain of possible soot particle sizes into discrete ranges based on size or mass; in both cases, the number density of soot particles of each increases or decreases according to defined soot chemistry and mechanisms. Table~\ref{t:psd_models} summarizes the PSD treatments implemented in SootLib.
+%
+\begin{table}[h]
+    \caption{Summary of soot particle size distribution models implemented in SootLib.}
+    \label{t:psd_models}
+    \centering
+    \resizebox{\textwidth}{!}{
+        \begin{tabular}{l l l}
+            \toprule
+            PSD model & Model ID & \# Moments   \\
+            \midrule
+            Assumed monodisperse~\cite{Lignell_2008b}     & \texttt{MONO}  & 2      \\
+            Assumed lognormal~\cite{Lignell_2008b}        & \texttt{LOGN}  & 3  \\
+            Quadrature method of moments~\cite{McGraw_1997,Marchisio_2013} & \texttt{QMOM}  & 2, 4, 6  \\
+            Method of moments with interpolative closure~\cite{Frenklach_2002b} & \texttt{MOMIC} & 3\textendash8  \\
+            Sectional model~\cite{Lehtinen_2001} & \texttt{SECT} & N/A \\
+            \bottomrule
+        \end{tabular}
+    }
+\end{table}
+%
 
-Moment methods, on the other hand, describe the PSD using the statistical moments of the distribution, where the $k^{th}$ mass moment of the discrete soot PSD is defined by
+\subsubsection{Moment methods}
+\label{s:moment-methods}
+
+Moment methods describe the PSD using the statistical moments of the distribution, where the $k^{th}$ mass moment of the discrete soot PSD is defined by
 \begin{equation}
     M_k = \sum_{i=1}^{\infty} m_i^k N_i,
 \end{equation}
@@ -251,68 +281,43 @@ where $m$ is the mass and $N$ is the number density of a given soot particle of 
     \label{e:momTransEq}
     \frac{\partial M_k}{\partial t} + \frac{\partial v_k M_k}{\partial x_k} = -\frac{\partial M_k V_k}{\partial x_k} + S_k,
 \end{equation}
-where the velocity $v_k$ and the diffusion velocity $V_k$ are assumed to be independent of particle size (which is a reasonable assumption for small soot particles transported mainly by convection and thermophoresis). $S_k$ represents the moment source term, which is comprised of the sum of individual moment source terms for the soot chemistry steps, usually one each for nucleation, surface growth, oxidation, and coagulation. While moment equations are exact, their source terms are unclosed---typically requiring fractional moment values---and further knowledge of the size distribution is required to calculate them. Moment methods differ primarily in their approach to the source term closure problem.
+where the velocity $v_k$ and the diffusion velocity $V_k$ are assumed to be independent of particle size (which is a reasonable assumption for small soot particles transported mainly by convection and thermophoresis). $S_k$ represents the moment source term, which is comprised of the sum of individual moment source terms for the soot chemistry steps, usually one each for nucleation, surface growth, oxidation, and coagulation. While moment equations are exact, their source terms are unclosed---they typically require fractional moment values---and further knowledge of the size distribution is required to calculate them. Moment methods differ primarily in their approach to the source term closure problem.
 
-SootLib includes four moment models for calculating the source terms of the moment transport equations, summarized in~\ref{t:psd_models}. Two of the models---\texttt{MONO} and \texttt{LOGN}---are assumed-shape size distribution models in which we assume a particular shape for the soot PSD in order to close the source terms. The two remaining models---\texttt{QMOM} and \texttt{MOMIC}---do not assume a shape for the PSD; instead, they obtain values for the unclosed fractional moments via numerical quadrature and interpolation, respectively. At the time of this writing, SootLib does not include either direct or sectional methods, but its structure is designed to be able to accommodate their addition in future releases.
+SootLib includes four moment models for calculating the source terms of the soot transport equations, summarized in~\ref{t:psd_models}. Two of the models---\texttt{MONO} and \texttt{LOGN}---are assumed-shape size distribution models in which we assume a particular shape for the soot PSD in order to close the source terms. The two remaining models---\texttt{QMOM} and \texttt{MOMIC}---do not assume a shape for the PSD; instead, they obtain values for the unclosed fractional moments via numerical quadrature and interpolation, respectively.
 
-\begin{table}
-    \caption{Summary of soot particle size distribution models implemented in SootLib.}
-    \label{t:psd_models}
-    \centering
-    \resizebox{\textwidth}{!}{
-        \begin{tabular}{l l l}
-            \hline
-            PSD model                                    & Model ID & \# Moments   \\
-            \hline
-            Assumed monodisperse~\cite{Lignell_2008b}     & \texttt{MONO}  & 2      \\
-            Assumed lognormal~\cite{Lignell_2008b}        & \texttt{LOGN}  & 3  \\
-            Quadrature method of moments~\cite{McGraw_1997,Marchisio_2013} & \texttt{QMOM}  & 2, 4, 6  \\
-            Method of moments with interpolative closure~\cite{Frenklach_2002b} & \texttt{MOMIC} & 3\textendash8  \\
-            \hline
-        \end{tabular}
-    }
-\end{table}
-
-%\subsubsection{Monodisperse distribution (\texttt{MONO})}
-%\label{sss:mono}
-
-SootLib's simplest PSD closure model is the assumed monodisperse size distribution (\texttt{MONO}), which requires only the first two moments of the soot PSD. These two moments, $M_0$ and $M_1$, correspond to the overall particle number density and mass density of soot particles, respectively, and can be used to define an average particle diameter
+SootLib's simplest moment closure model is the assumed monodisperse size distribution (\texttt{MONO}), which requires only the first two moments of the soot PSD. These two moments, $M_0$ and $M_1$, correspond to the overall particle number density and mass density of soot particles, respectively, and can be used to define an average particle diameter
 \begin{equation}
     d = \left( \frac{6M_1}{\pi \rho_s M_0} \right)^{1/3},
 \end{equation}
-which allows reaction rates to depend on quantities related to particle size, including particle surface area. Fractional moments are computed via logarithmic interpolation between $M_0$ and $M_1$, closing the moment source terms with relatively simple analytic expressions~\cite{Lignell_2008b}.
-
-Due to its simplicity and ease of use, the \texttt{MONO} model is a popular starting point for soot PSD modeling; it is implemented in SootLib for that reason. Its accuracy may be sufficient for simple flame configurations that produce relatively small soot particles in relatively small quantities. Because this model assumes a uniform shape for the soot PSD, however, it tends to lose accuracy as the distribution of soot particles becomes more varied and complex.
-
-%\subsubsection{Lognormal distribution (\texttt{LOGN})}
-%\label{sss:logn}
+which allows reaction rates to depend on quantities related to particle size, including particle surface area. Fractional moments are computed via logarithmic interpolation between $M_0$ and $M_1$, closing the moment source terms with relatively simple analytic expressions~\cite{Lignell_2008b}. Due to its simplicity and ease of use, the \texttt{MONO} model is a popular starting point for soot PSD modeling, and it is implemented in SootLib for that reason. Its accuracy may be sufficient for simple flame configurations that produce relatively small soot particles in relatively small quantities. Because this model assumes a uniform shape for the soot PSD, however, it tends to lose accuracy as the distribution of soot particles becomes more varied and complex.
 
 The assumed lognormal distribution (\texttt{LOGN}) model builds on the simplicity of the \texttt{MONO} model by adding a third mass moment, $M_2$, and assuming that the soot PSD can be described by a lognormal distribution rather than a monodisperse distribution~\cite{Lignell_2008b}. Whole-order moments can be calculated based on predefined parameters for the lognormal distribution in combination with $M_0$, and fractional moments can be calculated from the whole-order moments as
 \begin{equation}
     M_k = M_0^{1-\frac{3}{2}k+\frac{1}{2}k^2} M_1^{2k-k^2} M_2^{\frac{1}{2}k^2-\frac{1}{2}k}.
 \end{equation}
-
 As with the \texttt{MONO} model, the \texttt{LOGN} model is straightforward and computationally efficient while also increasing the potential for accuracy by assuming a more physically viable shape for the soot PSD. Unfortunately, assuming the distribution's shape still causes the model to lose accuracy as the PSD increases in complexity, though it can be appropriate for cases involving relatively small soot particles that do conform to a roughly lognormal PSD.
-
-%\subsubsection{Quadrature method of moments (\texttt{QMOM})}
-%\label{sss:qmom}
 
 Higher accuracy can be obtained by avoiding assuming the shape of the soot PSD, but this requires an alternate approach to closing the moment source terms. The quadrature method of moments (QMOM) does this by applying numerical quadrature to the unknown PSD~\cite{McGraw_1997}. SootLib applies the Wheeler algorithm for moment inversion to calculate the weights and abscissas of the unknown soot PSD~\cite{Marchisio_2013,Wheeler_1974}. For a set of $N$ whole-order moments, resulting in $N/2$ weights $w$ and abscissas $x$ from the inversion algorithm, fractional moments can be calculated with
 \begin{equation}
     M_k = \sum_{i=1}^{N/2} w_i x_i^k.
 \end{equation}
-
 Avoiding specifying a shape for the soot PSD significantly increases the accuracy of the model, particularly when the distribution increases in complexity, and while this does increase the computational resources required, efficient inversion algorithms and careful implementation can reduce it to acceptable levels.
-
-%\subsubsection{Method of moments with interpolative closure (\texttt{MOMIC})}
-%\label{sss:momic}
 
 Like QMOM, the method of moments with interpolative closure (MOMIC) also avoids specifying the shape of the soot PSD, but it closes the moment source terms by interpolating between whole order moments to calculate fractional moments rather than applying any numerical quadrature. This potentially increases its numerical efficiency over quadrature methods while retaining similar levels of accuracy. SootLib implements MOMIC as described by Frenklach~\cite{Frenklach_2002b,Frenklach_1987}, which uses a Lagrange interpolation between logarithms of the  whole-order reduced moments, $\mu_k = M_k/M_0$.
 
 Experimental studies show that the soot PSD is generally bimodal and may be reasonably approximated by the combination of a lognormal distribution and a power law function~\cite{Wang_2011}. It is straightforward to generate an expression for an arbitrary moment based on the distribution parameters, but a nonlinear solver is required to calculate distribution parameters from a given moment set, significantly increasing the time and computational cost of the calculation~\cite{Lignell_2008b}. Additionally, such a distribution still assumes a form for the soot PSD---albeit a more complex one---which restricts its evolution. Under these conditions, it is reasonable to choose methods like QMOM and MOMIC that do not assume a shape for the soot PSD; they can still produce the desired bimodal distribution given a sufficient moment set but have neither the restrictions nor the additional computational overhead of an assumed bimodal distribution. Assumed bimodal distribution models are not typical for these reasons, and, as such, SootLib does not include any models of this type.
 
-%\subsubsection{Sectional model (SECT)}
-%\label{sss:sect}
+\subsubsection{Sectional model}
+\label{s:sectional}
+
+Sectional models represent the PSD directly---rather than statistically, as moment methods do---using the particle number density in a defined set of sections that represent the discretized domain.  Rather than computing source terms, SootLib's sectional model---\texttt{SECT}---tracks changes in the particle population via the discrete coagulation equation,
+\begin{equation}
+    \label{e:coag-discrete}
+    \frac{dN_k(t)}{dt} = \frac{1}{2}\sum_{j=1}^{k-1}K_{j,k-j}N_jN_{k-j} - N_k \sum_{j=1}^{\infty} K_{k,j}N_j, \hspace{10pt} k \geq 2,
+\end{equation}
+where $N_k$ represents the number density of soot particles in the $k^{th}$ section, where each section represents a range of soot particle sizes. $K$ is the coagulation coefficient, defined by~\eqref{e:soot-coag-K12}, and its computation depends on the chosen coagulation mechanism. Within a given section, the first term on the right hand side of~\eqref{e:coag-discrete} represents the formation of particles of size $k$ due to the collision and destruction smaller particles, while the second term represents the destruction of particles of size $k$ due to collisions with other particles.
+
+The accuracy of any sectional model depends on the resolution of its domain; the more sections that are defined, the closer the approximation gets to describing the true soot PSD (as a direct method would), but the higher the computational cost becomes. A sectional model could require hundreds or even thousands of sections, each with its own transport equation, to achieve the same level of accuracy as only a handful of moment transport equations, which represents a significant investment of computational cost and time. It can be advantageous, however, because it makes no assumptions about the shape, size, or behavior of the PSD and does not require closure modeling like moment methods do. Because the discrete coagulation equation is derived from first principles, it is fundamentally physically accurate, which makes sectional models valuable tools for research and model validation.
 
 \subsection{Model combinations and limitations}
 \label{ss:limitations}
@@ -325,19 +330,20 @@ The following points apply to individual soot chemistry mechanisms:
 \begin{itemize}
     \item The \texttt{LL} model is included with SootLib as a point of reference because it is one of the most common global soot models used in combustion simulations. This model was developed using observations of laboratory-scale ethylene jet flames, and its accuracy and applicability are generally limited to conditions similar to those under which it was developed.
     \item The \texttt{LL} mechanisms were designed to be used together, but can still provide physically meaningful results when separated.
+    \item The Leung and Lindstedt model as presented in~\cite{Leung_1991} includes a coagulation mechanism that is a modified free-molecular regime model, so it is not explicitly implemented in SootLib. Instead, users can obtain the equivalent of \texttt{LL} coagulation results by choosing \texttt{FM} coagulation and modifying the \texttt{FM\_multiplier} variable by calling the auxiliary \texttt{set\_FM\_multiplier} function with the argument \texttt{9/2/eps\_c}.
     \item The \texttt{LIN} surface growth mechanism was designed as an improvement to the \texttt{LL} surface growth mechanism and performs most reliably when combined with other \texttt{LL} mechanisms or the \texttt{LIN} nucleation mechanism (which was developed later by the same author).
     \item The \texttt{HACA} surface growth and oxidation mechanisms were not designed to be used separately. The SootLib code will produce an error if the user attempts to combine HACA surface growth with non-HACA oxidation or vice versa.
     \item The \texttt{PAH} nucleation mechanism also includes a PAH condensation mechanism. This is by design in order to more closely adhere to the model as presented by its authors~\cite{Blanquart_2009c}. At present, the two cannot be separated, though this may change in future releases.
 \end{itemize}
 
-As discussed in Section~\ref{ss:cost}, choosing a soot PSD model for combustion simulations often involves a balance between accuracy and computational cost. While the 2-moment \texttt{MONO} and 3-moment \texttt{LOGN} models are significantly faster than \texttt{QMOM} and \texttt{MOMIC}, they are relatively inflexible because they assume a shape for the soot PSD, limiting its ability to evolve like an actual distribution of soot particles would. That simplicity, however, can be convenient and appropriate for certain applications, such as simulating flames in which soot occurs in relatively small amounts or does not coagulate significantly beyond spherical particles. Methods like QMOM and MOMIC that do not make assumptions about the shape of the soot PSD are advantageous because they allow the soot distribution to evolve naturally, and the number of moments used can be increased to meet accuracy requirements. The more moments that are used to describe the distribution, the more accurately the distribution can be recreated from an arbitrary moment set, but increasing the number of moments can also significantly increase the computational cost of the model.
+As discussed in Section~\ref{ss:cost}, choosing a soot PSD model for combustion simulations often involves a balance between accuracy and computational cost. While the 2-moment \texttt{MONO} and 3-moment \texttt{LOGN} models are significantly faster than \texttt{QMOM} and \texttt{MOMIC}, they are relatively inflexible because they assume a shape for the soot PSD, limiting its ability to evolve like an actual distribution of soot particles would. That simplicity, however, can be convenient and appropriate for certain applications, such as simulating flames in which soot occurs in relatively small amounts or does not coagulate significantly beyond spherical particles. Methods like QMOM and MOMIC that do not make assumptions about the shape of the soot PSD are advantageous because they allow the soot distribution to evolve naturally, and the number of moments used can be increased to meet accuracy requirements. Sectional models can be incredibly accurate and require fewer assumptions than moment methods, but high accuracy requires high resolution, which comes at the expense of computational cost and time.
 
 The following points represent some considerations to make when choosing a soot PSD model for simulations:
 \begin{itemize}
     \item Due to the nature of numerical quadrature, \texttt{QMOM} is limited to even-numbered moment sets ($N=2,4,6\ldots$).
     \item A 2-moment QMOM model is functionally equivalent to a monodisperse distribution (MONO), but has additional overhead associated with its implementation. If there is a choice between the two, the \texttt{MONO} model is generally preferable to a 2-moment \texttt{QMOM} model.
     \item For general-purpose soot modeling within combustion simulations, four moments is a good starting point and is generally sufficient to describe a soot PSD for simple gaseous fuels. For more complex fuels or cases requiring higher accuracy, more moments may be required.
-    \item Soot particles generally exhibit a bimodal size distribution, which requires five moments to describe accurately. To capture and reproduce this behavior in a simulation, choose a soot modeling approach that uses at least five moments.
+    \item Soot particles generally exhibit a bimodal size distribution, which requires at least five moments to describe accurately. To capture and reproduce this behavior in a simulation, choose a moment method that can accommodate five or more moments or consider a sectional model.
 %    \item There is no general analytical method for uniquely reconstructing a distribution from its moment set unless the shape of the distribution is known. If such a recreation is required, choose an assumed-size distribution or consider if applicable constraints or assumptions permit use of other tools for reconstructing a distribution from an arbitrary moment set~\cite{Saad_2019}.
 \end{itemize}
 
@@ -394,7 +400,7 @@ The SootLib library consists primarily of two object classes through which the u
 
 SootLib's major functionalities can be summarized as follows:
 \begin{itemize}
-    \item Calculates moment source terms (Eq.~\ref{e:momTransEq}) for the soot PSD given thermodynamic state details and chemistry mechanisms chosen by the user; and
+    \item Calculates moment or number density source terms for the soot PSD given thermodynamic state details and chemistry mechanisms chosen by the user; and
     \item Calculates mass fraction source terms for gaseous chemical species affected by soot chemistry, including PAH where appropriate.
 \end{itemize}
 %Auxiliary functionalities and features include the following:
@@ -604,7 +610,7 @@ In the free-molecular limit ($Kn \rightarrow \infty)$, the coagulation coefficie
 \end{equation}
 which is equal to the expression obtained directly from kinetic theory~\cite{Seinfeld_2016}.
 
-The simplified transition regime model for the coagulation coefficient presented by Frenklach~\cite{Frenklach_2002b} also takes the form $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$, but the collision factor $\beta$ is calculated as the harmonic mean of the continuum ($\beta_c$) and free-molecular ($\beta_f$) regime limit values,
+The harmonic mean transition regime model for the coagulation coefficient also takes the form $K_{12}=2\pi (D_{p1}+D_{p2})(D_1+D_2)\beta$, but the collision factor $\beta$ is calculated as the harmonic mean of the continuum ($\beta_c$) and free-molecular ($\beta_f$) regime limit values~\cite{Frenklach_2002b},
 \begin{equation}
     \beta = \frac{\beta_f \beta_c}{\beta_f + \beta_c},
 \end{equation}
