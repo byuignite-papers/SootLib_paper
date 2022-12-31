@@ -90,6 +90,8 @@
 %\renewcommand{\thefootnote}{\fnsymbol{footnote}}
 \author{Victoria B. Stephens}
 \author{Josh Bedwell}
+\author{Alex J. Josephson}
+\author{Keturah Oldham}
 \author{David O. Lignell\corref{cor1}}
 
 \cortext[cor1]{Corresponding author \ead{davidlignell@byu.edu}}
@@ -97,7 +99,9 @@
 \address{Chemical Engineering Department, Brigham Young University, Provo, UT 84602, USA}
 
 \begin{abstract}
-sootlib abstract goes here
+%
+Soot formation in combustion is an important process that affects radiative heat transfer, flame temperatures, and emissions with health and environmental impacts. Soot formation involves complex chemistry for nucleation, growth, oxidation, and coagulation processes. The soot particles vary widely in size and accurate modeling requires representation of the particle size distribution (PSD). Modeling soot is not trivial, and is only one of several physical processes active in combustion systems. This paper presents a software package called SootLib, which is an open-source library for modeling soot formation and other aersol systems. SootLib is written in C++, is documented with Doxygen, and is available on GitHub. The library includes several models for soot chemistry and coagulation, and it represents the PSD using either a sectional model or the method of moments (MOM). Four closure approaches for the MOM are implemented allowing up to eight moments: monodispersed, an assumed-shape lognormal distribution, the quadrature method of moments, and the method of moments with interpolative closure. SootLib provides an interface for inclusion in other combustion packages including CFD or reacting flow solvers. The range of of models allows comparisons and sensitivity studies, and the modularity facilitates extenstion to other soot models.
+%
 \end{abstract}
 
 \begin{keyword}
@@ -115,15 +119,18 @@ soot \sep combustion \sep reacting flow simulation \sep CFD
 \section{Introduction}
 \label{s:intro}
 
-Most commercial combustion processes that produce energy involve turbulent, non-premixed flames, which produce soot. Soot is responsible for a flame's luminosity, generates a large portion of a flame's radiative heat transfer to its surroundings, and contributes to many of the health, safety, and environmental hazards associated with air pollution from combustion systems~\cite{EPA_2009,EPA_2004}. In order to address soot's negative effects and optimize practical combustion processes, scientists and engineers seek a better understanding of soot's fundamental structure and behavior in combustion environments, often through modeling and simulation.
+Soot formation is a fundamental aspect of nonpremixed combustion and is important in engineering applications and fires, including wildland fires. Soot is responsible for a flame's luminosity, generates a large portion of a flame's radiative heat transfer to its surroundings, and contributes to many of the health, safety, and environmental hazards associated with air pollution from combustion systems~\cite{EPA_2009,EPA_2004}. In order to address soot's negative effects and optimize practical combustion processes, scientists and engineers seek a better understanding of soot's fundamental structure and behavior in combustion environments, often through modeling and simulation.
 Combustion processes span many orders of magnitude in both their length and time scales, and simulating soot in flames further expands the range of scales that must be considered, adding additional complexity and computational cost.
 
 Direct simulation approaches can produce accurate simulation data by resolving the full range of length and time scales, but the computational cost can be prohibitively high, particularly for simulating practical combustion processes of interest to engineers~\cite{Pope_2000}.
-Computational models that quantify soot production in simulations can help us study its fundamental behavior and distinguish between various reaction mechanisms and transport models while also reducing the potentially high computational cost.
-Accurate models and simulations that help us clarify the fundamental processes that control soot formation and transport in flames represent an important step forward in the study of combustion systems~\cite{Frenklach_2002b}.
+Computational models that quantify soot production in simulations can help us study its fundamental behavior and distinguish between various reaction mechanisms and transport models while also reducing the potentially high computational cost. Such models represent an important step forward in the study of combustion systems ~\cite{Frenklach_2002b}.
 
-SootLib is a convenient, easy-to-use access point for soot property and particle dynamics modeling that can be interfaced with various simulation approaches for combustion CFD.
-SootLib is a C++ library with a modular design that makes model parts interchangeable, allowing users to quickly and easily compare and contrast models within its library of validated mechanisms for soot chemistry and particle dynamics, all of which are implemented with a consistent framework and interface. SootLib provides researchers with convenient access to soot modeling tools suitable for various reacting CFD applications.
+This paper presents a software package called SootLib that is an easy-to-use access point for soot property and particle dynamics modeling, and that can be interfaced with various simulation approaches for combustion CFD.
+SootLib is a C++ library with a modular design with interchangeable model parts, allowing users to quickly and easily compare and contrast models within its library of validated mechanisms for soot chemistry and particle dynamics, all of which are implemented with a consistent framework and interface. 
+SootLib includes models for soot chemistry as well as representations of the particle size distribution (PSD). These representations include a sectional model and the method of moments (MOM) with four closure schemes that consider up to eight moments. 
+While focused on soot formation in combustion systems, SootLib can be applied broadly to a range of aerosol systems.
+
+We present below a summary of the soot models, a description of the SootLib software, and illustrative examples.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
