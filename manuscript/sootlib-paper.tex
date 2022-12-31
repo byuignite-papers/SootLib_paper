@@ -89,7 +89,7 @@
 
 %\renewcommand{\thefootnote}{\fnsymbol{footnote}}
 \author{Victoria B. Stephens}
-\author{Josh Bedwell}
+\author{Joshua Bedwell}
 \author{Alex J. Josephson}
 \author{Keturah Oldham}
 \author{David O. Lignell\corref{cor1}}
@@ -110,7 +110,7 @@ soot \sep combustion \sep reacting flow simulation \sep CFD
 
 \end{frontmatter}
 
-\linenumbers
+%\linenumbers
 
 %-------- main text --------
 
@@ -137,24 +137,27 @@ We present below a summary of the soot models, a description of the SootLib soft
 \section{Model Descriptions}
 \label{s:models}
 
-Soot models can generally be broken down into two interrelated parts: chemistry and particle dynamics. Soot chemistry models address the chemical reactions involved in soot behavior, including particle inception, growth, and destruction, while particle dynamics models describe the soot particle size distribution (PSD) and its evolution. Given a thermodynamic state and a set of chemical mechanisms, the PSD model predicts changes in the amounts and relative locations of variously sized soot particles based on their current distribution, the desired chemistry, and the thermodynamic state of the surrounding gas. Using a particular set of soot chemistry models generally does not necessitate using a particular PSD model, and vice versa, and SootLib takes advantage of this distinction by allowing users to specify individual models rather than predetermined model sets, giving them more flexibility and control in simulations.
+Soot models can generally be broken down into two interrelated parts: chemistry and particle dynamics. Soot chemistry models address the chemical reactions involved in soot behavior, including particle inception, growth, and destruction, while particle dynamics models describe the soot particle size distribution (PSD) and its evolution. Given a thermodynamic state and a set of chemical mechanisms, the PSD model predicts changes in the amounts and relative locations of variously sized soot particles based on their current distribution, the desired chemistry, and the thermodynamic state of the surrounding gas. Using a particular set of soot chemistry models generally does not necessitate using a particular PSD model.
+SootLib has a modular structure that allows users to specify individual models rather than predetermined model sets, giving them more flexibility, and allowing model comparisons and sensitivity.
 
 %--------------------------------------------------------------------------
 \subsection{Chemistry}
 \label{s:chemistry}
 
-In a modeling context, soot is usually described as a collection of carbon atoms above a predefined mass threshold.\footnote{In reality, soot may also contain lesser amounts of hydrogen and other elements.} Soot particles are typically assumed to be spherical, which facilitates calculation of particle diameter, volume, and surface area; this is a reasonable assumption for nascent soot particles, but may not be adequate to describe large soot agglomerates, which tend to exhibit fractal structures~\cite{Jullien_1987,Wang_2011}.
+In a modeling context, soot is usually described as a collection of carbon atoms above a predefined mass threshold.\footnote{In reality, soot also contains lesser amounts of hydrogen and other elements.} Soot particles are typically assumed to be spherical, which facilitates calculation of particle diameter, volume, and surface area. This is a reasonable assumption for nascent soot particles, but may not be adequate to describe large soot agglomerates, which tend to exhibit fractal structures~\cite{Jullien_1987,Wang_2011}.
 
-Soot chemistry is commonly divided into four primary categories: nucleation reactions describe how soot particles form from gaseous precursors, surface growth refers to chemical addition of gaseous species to existing soot particles, oxidation reactions involve soot particle size reduction by reaction with oxygen-based gas species, and coagulation describes how soot particles interact with one another to create new particles. Soot may also undergo additional processes such as growth by condensation of large polycyclic aromatic hydrocarbons (PAH) or agglomeration of particles into large fractal aggregates. A complete soot chemistry model typically provides a mechanism for all four major steps, each of which occurs independently but depends on the composition and thermodynamic properties of the surrounding gas. Some models provide all four mechanisms, while others expand on earlier mechanisms or focus on one type.
+Soot chemistry and physical processes are commonly divided into four categories: nucleation from gaseous precursors, growth and oxidation of soot by reaction with gaseous species, and coagulation of soot particles to form larger particles. Additional soot processes include condenation of larger polcyclic aromatic hydrocarbons (PAH), agglomeration into large fractal aggregates, and fragmentation during oxidation processes.
+These processes depend on the soot PSD and on the gas state.
+Some models provide all four mechanisms, while others expand on earlier mechanisms or focus on one type.
 
 Global kinetic mechanisms, typically represented by Arrhenius-style rate expressions, are popular choices in combustion simulations involving soot, particularly in cases that require soot modeling but cannot afford the relatively high computational cost of detailed soot models or gas mechanisms. Because global models represent each type of soot chemistry with simplified, empirical rate expressions, they do not capture all of the fundamental mechanisms of soot phenomena, but they are relatively simple, easy to implement, and computationally inexpensive. In other words, global models tend to sacrifice accuracy in favor of high speed and low computational cost.
 
-Physics-based models and mechanisms aim for high accuracy by using multiple elementary reaction steps to represent actual soot behavior rather than relying on the empiricism inherent in global reaction models. By accounting for fundamental phenomena, physics-based models may result in increased accuracy at the expense of computational speed and efficiency. The two-step oxidation models presented below (Section~\ref{s:oxi}) are simple examples of how using multiple reaction steps can increase accuracy; by accounting for oxidation by both \ce{O2} and \ce{OH}, such models can use validated rate data for each elementary reaction step, potentially resulting in higher accuracy than a model that only considers one oxidation species or combines both dependencies into one empirical rate expression.
+Physics-based models and mechanisms use multiple elementary reaction steps to represent actual soot behavior rather than relying on the empiricism inherent in global reaction models. By accounting for fundamental phenomena, physics-based models may result in increased accuracy at the expense of computational speed and efficiency. The two-step oxidation models presented below (Section~\ref{s:oxi}) are simple examples of how using multiple reaction steps can increase accuracy; by accounting for oxidation by both \ce{O2} and \ce{OH}, such models can use validated rate data for each elementary reaction step, potentially resulting in higher accuracy than a model that only considers one oxidation species or combines both dependencies into one empirical rate expression.
 
-SootLib collects a range of models from the literature and implements them with a uniform interface, offering modelers a flexible testing framework and consistent interface for model development and simulations. Table~\ref{t:chem_models} summarizes the soot chemistry models implemented in SootLib, and the following sections provide general description. For further information regarding individual models and their implementations, please refer to the package documentation.
+SootLib collects a range of models from the literature and implements them with a uniform interface, offering modelers a flexible framework and consistent interface for model development and simulation. Table~\ref{t:chem_models} summarizes the soot chemistry models implemented in SootLib, and the following sections provide general description. Further information is provided in the package documentation.
 
 \begin{sidewaystable}
-    \caption[Summary of soot chemistry models implemented in SootLib]{Summary of soot chemistry models implemented in SootLib. In mechanisms, \ce{C(s)} represents a soot particle, i.e. "solid" carbon, and \ce{C(s)^.} indicates a radical site on a soot particle, typically caused by hydrogen abstraction. Variable definitions for rate expressions and rate expressions that involve multiple expressions or otherwise do not fit well in this table can be found in their respective sections as noted.}
+\caption[Summary of soot chemistry models implemented in SootLib]{Summary of soot chemistry models implemented in SootLib. In mechanisms, \ce{C(s)} represents a soot particle, i.e. ``solid'' carbon, and \ce{C(s)^.} indicates a radical site on a soot particle, typically caused by hydrogen abstraction. Variable definitions for rate expressions and rate expressions that involve multiple expressions or otherwise do not fit well in this table can be found in their respective sections as noted.}
     \label{t:chem_models}
     \centering
     \resizebox{\textwidth}{!}{
@@ -187,7 +190,7 @@ SootLib collects a range of models from the literature and implements them with 
             Neoh~\cite{Neoh_1980,Neoh_1981}       & \texttt{NSC\textunderscore NEOH} & \ce{C + 1/2O2 -> CO} & Refer to documentation \\
             &                                       &                & \ce{C + OH -> CO + H} & $R_{oxi,\ce{OH}}=0.13\cdot 1290 P_{\ce{OH}} T^{-1/2}$\\
             \midrule
-            Coagulation    & Continuum regime~\cite{Seinfeld_2016} & \texttt{CONTINUUM} & \ce{nC(s) -> C_n(s)} Refer to documentation \\
+            Coagulation    & Continuum regime~\cite{Seinfeld_2016} & \texttt{CONTINUUM} & \ce{nC(s) -> C_n(s)} & Refer to documentation \\
             & Free-molecular regime~\cite{Seinfeld_2016}  & \texttt{FM}    & \ce{nC(s) -> C_n(s)} & Refer to documentation \\
             & Harmonic mean~\cite{Frenklach_2002b} & \texttt{HM} & \ce{nC(s) -> C_n(s)} & Refer to documentation\\
             & Fuchs~\cite{Fuchs_1964,Seinfeld_2016} & \texttt{FUCHS} & \ce{nC(s) -> C_n(s)} & Refer to documentation \\
@@ -201,16 +204,10 @@ SootLib collects a range of models from the literature and implements them with 
 \subsubsection{Nucleation}
 \label{s:nuc}
 
-Particle nucleation refers to the mechanisms by which the smallest possible soot particles are formed. SootLib includes three different models for nucleation from gaseous fuels. For kinetic-style nucleation mechanisms, SootLib defines a soot particle as a collection of at least 100 carbon atoms, a common threshold value found in soot modeling literature~\cite{Leung_1991}. Other definitions or threshold values depend on the model used; for example, SootLib's PAH nucleation mechanism defines the smallest possible soot particle as the result of a collision between two PAH dimers~\cite{Blanquart_2009c}. The simplest nucleation models link nucleation rate to the concentration of acetylene (\ce{C2H2}) in the surrounding gas, while more complex models may account for any number of gaseous hydrocarbon species.
+Nucleation is the mechanism by which the smallest soot particles are formed from gas phase reactions. Simple nucleation models use acetylene as a surrogate species. More complex mechanisms form soot from PAH. SootLib implements two models for nucleation based on acetylene from Leung et~al.~\cite{Leung_1991} and from Lindstead~\cite{Lindstedt_2005}, and another based on PAH nucleation from Blanquart and Pitsch~\cite{Blanquart_2009c}. The acetylene models assume a smallest soot size of 100 carbon atoms (that can be changed). 
 
-SootLib's most basic chemistry model is the simplified kinetic mechanism presented by Leung and Lindstedt (\texttt{LL}), which consists of four Arrhenius-style rate expressions: one each for soot nucleation, surface growth, oxidation, and coagulation~\cite{Leung_1991}. The \texttt{LL} nucleation rate depends only on the concentration of gaseous acetylene, the gas temperature, and an empirically-determined rate constant. Lindstedt later proposed an alteration to the \texttt{LL} nucleation step's pre-exponential factor to increase accuracy without changing the expression's form (\texttt{LIN})~\cite{Lindstedt_2005}. Both of these mechanisms are known for simplicity and speed rather than accuracy, but may be appropriate under certain conditions.
-
-The experimental literature indicates that soot produced by gaseous fuels tends to nucleate via PAH collisions rather than directly from acetylene precursors, though the precise mechanisms are still unclear~\cite{Wang_2011}. SootLib implements the PAH nucleation model presented by Blanquart and Pitsch (\texttt{PAH}), in which nascent soot particles are created by the collision of two PAH dimers, themselves created by the collision of two PAH molecules~\cite{Blanquart_2009c}. Due to the small binding energy of newly formed PAH dimers and the shallow potential well associated with it, the effective rate of PAH dimer formation is much smaller than the collision rate predicted by kinetic molecular theory, so a sticking coefficient $\gamma$ in introduced to account for the difference between the observed self-collision rate and the rate predicted by kinetic molecular theory~\cite{Blanquart_2009c}.
-
-Rather than computing the properties of every possible dimer combination, the model evaluates only the total rate of dimer formation and the average carbon content of each dimer. Because PAH and dimer collision rates are high, we can assume a quasi-steady state dimer concentration, which allows us to calculate the steady state dimer concentration by solving a quadratic equation. Once the steady state dimer concentration has been computed, the nucleation rate is calculated as the collision rate between dimers.
-
-This PAH nucleation model also accounts for condensation of PAH dimers onto existing soot particles, which contributes to chemical surface growth.
-The PAH condensation rate is computed similarly to the nucleation rate, but the collision coefficient $\beta$ is computed as the collision rate between PAH dimers and soot particles rather than the self-collision rate of PAH dimers, and the mass concentration of both the PAH dimers and soot particles is taken into account.
+The PAH model includes several PAH species and soot is formed from the collision of two PAH dimers. Rather than computing the properties of every possible dimer combination, the model evaluates only the total rate of dimer formation and the average dimer carbon content. Because collision rates are high, a quasi-steady state dimer concentration is assumed, which allows calculation of the dimer concentration by solving a quadratic equation. Once the steady state dimer concentration has been computed, the nucleation rate is calculated as the collision rate between dimers.
+This PAH nucleation model allows for condensation of PAH dimers onto existing soot particles via collision, augmenting the surface growth model.
 
 %--------------------------------------------------------------------------
 \subsubsection{Surface growth}
