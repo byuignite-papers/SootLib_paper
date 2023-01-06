@@ -374,11 +374,10 @@ Regarding the PSD model chosen, \texttt{QMOM} requires an even number of moments
 \label{s:architecture}
 
 SootLib is an object-oriented C++ library intended for use in reacting flow simulations including CFD.
-Upon download, the SootLib package contains five directories: 
+Upon download, the SootLib package contains four directories: 
 %
 \begin{itemize}
     \item \texttt{src} contains the SootLib source code; 
-    \item \texttt{ext} contains externally sourced functions used by SootLib; 
     \item \texttt{examples} contains usage example codes; 
     \item \texttt{tests} contains SootLib's optional testing suite, driven by Catch2; and 
     \item \texttt{docs} contains the files optionally used to generate code documentation with Doxygen.
@@ -446,7 +445,7 @@ Computational cost comparisons of the various models have been performed. These 
 \section{Conclusion}
 \label{s:soot-conclusion}
 
-To the authors' best knowledge, there is no existing tool like SootLib, which combines various soot models into one package on a consistent, cross-platform, open-source framework that is not specific to any one CFD code or simulation type. It requires no external dependencies, and it can be used in C++ projects directly or included in larger CMake projects via its exported package or CMake's FetchContent module. Users interact with the SootLib library through a small group of objects and functions that allow them to specify model parameters, set a thermodynamic state and composition for the gas environment, and calculate source terms for moment transport equations.
+To the authors' best knowledge, there is no existing tool like SootLib, which combines various soot models into one package on a consistent, cross-platform, open-source framework that is not specific to any one CFD code or simulation type. It requires no external dependencies except for LApack, and it can be used in C++ projects directly or included in larger CMake projects via its exported package or CMake's FetchContent module. Users interact with the SootLib library through a small group of objects and functions that allow them to specify model parameters, set a thermodynamic state and composition for the gas environment, and calculate source terms for moment transport equations.
 
 SootLib is intended to be a convenient tool that provides combustion researchers with more options and more control over simulations involving sooting flames. For researchers who do not specialize in soot but require soot modeling in order to perform accurate simulations, SootLib lowers the barrier to entry on the topic; it requires a minimum of prior knowledge to use, representing a significant time savings to its users. For combustion researchers who do specialize in soot, SootLib's uniform framework and modular design make it a good comparative tool, increasing the potential for useful parametric studies involving soot and decreasing the overhead involved with testing new and existing soot models under a variety of conditions.
 
